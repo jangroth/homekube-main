@@ -5,19 +5,24 @@ vars:
 
 tasks:
   default:
-    desc: "Default task - Update both control node and Kubernetes nodes"
-    deps:
-      - update-all
+    desc: "List available tasks"
+    cmd: task --list
+
+  setup:
+    desc: "Install Python dependencies and Ansible collections"
+    cmds:
+      - uv sync
+      - uv run ansible-galaxy collection install -r {{.ANSIBLE_DIR}}/requirements.yml
 
   setup-cni:
-    desc: "Install and configure CNI plugins for Kubernetes"
+    desc: "Install and configure CNI (Cilium)"
     dir: "{{.ANSIBLE_DIR}}"
-    cmd: ansible-playbook 05-setup-cni.yml
+    cmd: uv run ansible-playbook 05-setup-cni.yml
 
   setup-gitops:
-    desc: "Install and configure ArgoCD for GitOps operations"
+    desc: "Install and configure GitOps (ArgoCD)"
     dir: "{{.ANSIBLE_DIR}}"
-    cmd: ansible-playbook 06-setup-gitops.yml
+    cmd: uv run ansible-playbook 06-setup-gitops.yml
 
   update-all:
     desc: "Update both control node and Kubernetes nodes"
@@ -26,11 +31,11 @@ tasks:
       - update-k8s-nodes
 
   update-control-node:
-    desc: "Update control node with necessary tools and configurations"
+    desc: "Update control node (darth) with tools and configuration"
     dir: "{{.ANSIBLE_DIR}}"
-    cmd: ansible-playbook 01-update-control-node.yml --tags update-only
+    cmd: uv run ansible-playbook 01-update-control-node.yml --tags update-only
 
   update-k8s-nodes:
-    desc: "Update Kubernetes nodes with system packages and storage configuration"
+    desc: "Update Kubernetes nodes (system packages, storage)"
     dir: "{{.ANSIBLE_DIR}}"
-    cmd: ansible-playbook 03-setup-k8s-nodes.yml --tags update-only
+    cmd: uv run ansible-playbook 03-setup-k8s-nodes.yml --tags update-only
