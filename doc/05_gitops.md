@@ -1,15 +1,25 @@
-# 5. ArgoCD applications
+# GitOps — ArgoCD
 
-## Init Wave
+> To be updated when Phase 5 is reached.
 
-`argocd.argoproj.io/sync-wave: "-1"`
+## Deploy ArgoCD
+
+```shell
+ansible-playbook 06-setup-gitops.yml
+```
+
+Deploys ArgoCD via Helm and applies the App-of-Apps root app.
+
+---
+
+## App-of-Apps Structure
+
+### Init Wave (`sync-wave: "-1"`)
 
 - [argocd-config](https://github.com/jangroth/homekube-apps/blob/main/applications/wave-00-init/argocd-config.yaml)
 - [longhorn](https://github.com/jangroth/homekube-apps/blob/main/applications/wave-00-init/longhorn.yaml)
 - [metrics-server](https://github.com/jangroth/homekube-apps/blob/main/applications/wave-00-init/metrics-server.yaml)
 
-## Apps Wave
+### Apps Wave (`sync-wave: "1"`)
 
-`argocd.argoproj.io/sync-wave: "1"`
-<!-- 
-- [test-lb](https://github.com/jangroth/homekube-apps/blob/main/applications/wave-01-apps/test-lb.yaml) -->
+(TBD)

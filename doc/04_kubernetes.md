@@ -1,4 +1,6 @@
-# 3. k8s, CNI (cilium), CSI (longhorn)
+# Kubernetes Install — kubeadm, Cilium, Longhorn
+
+> To be updated when Phase 4 is reached.
 
 ## 3.0 Optional: Reset previous installation
 
