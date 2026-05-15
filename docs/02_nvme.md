@@ -54,8 +54,10 @@ lsblk   # must show nvme0n1 before proceeding
 sudo wipefs -a /dev/nvme0n1
 
 # Create partitions: 512M vfat boot, rest ext4 root
-sudo parted -s /dev/nvme0n1 mklabel gpt
+# MBR (msdos) — Pi5 firmware boots cleanly from MBR; matches SD format
+sudo parted -s /dev/nvme0n1 mklabel msdos
 sudo parted -s /dev/nvme0n1 mkpart primary fat32 1MiB 513MiB
+sudo parted -s /dev/nvme0n1 set 1 boot on
 sudo parted -s /dev/nvme0n1 mkpart primary ext4 513MiB 100%
 
 # Format
@@ -98,7 +100,7 @@ sudo umount /mnt/clone/boot/firmware && sudo umount /mnt/clone
 
 ```bash
 sudo rpi-eeprom-config > /tmp/bootconf.txt
-sudo sed -i 's/BOOT_ORDER=.*/BOOT_ORDER=0xf61/' /tmp/bootconf.txt
+sudo sed -i 's/BOOT_ORDER=.*/BOOT_ORDER=0xf16/' /tmp/bootconf.txt
 sudo rpi-eeprom-config --apply /tmp/bootconf.txt
 sudo reboot
 ```

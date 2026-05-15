@@ -1,0 +1,19 @@
+---
+# NVMe migration. Two phases around a human checkpoint (physical NVMe attach):
+#   Phase 1 (pre-attach):  ansible-playbook setup-nvme.yml --tags nvme_pre
+#   Phase 2 (post-attach): ansible-playbook setup-nvme.yml --tags nvme_post --limit pi0,pi1,pi2
+# See docs/specs/001-nvme-clone-automation.md.
+- hosts: all_nodes
+  become: true
+  serial: 1
+  gather_facts: false
+  pre_tasks:
+    - name: Use boot user for connection (pre-bootstrap)
+      set_fact:
+        ansible_user: boot
+        ansible_ssh_pass: boot
+        ansible_become_pass: boot
+      no_log: true
+      tags: always
+  roles:
+    - role: raspberry-pi

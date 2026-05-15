@@ -1,60 +1,261 @@
-# ---
-# #
-# # copy sd card to nvme, mount nvme partitions
-# #
+---
+# Clone SD → NVMe via rsync. See docs/specs/001-nvme-clone-automation.md.
 
-# - name: Copy mmcblk0p1 to nvme0n1p1
-#   command: dd if=/dev/mmcblk0p1 of=/dev/nvme0n1p1 bs=4M status=progress
+# ---------- Preflight: short-circuit if already migrated ----------
 
-# - name: Ensure filesystem integrity (nvme0n1p1)
-#   command: fsck -fy /dev/nvme0n1p1
-#   ignore_errors: true
+- name: Detect current root device
+  command: findmnt -no SOURCE /
+  register: current_root
+  changed_when: false
+  check_mode: false
 
-# - name: Resize filesystems to match partition size (nvme0n1p1)
-#   command: resize2fs /dev/nvme0n1p1
-#   ignore_errors: true
+- name: Short-circuit — already booting from NVMe
+  meta: end_host
+  when: current_root.stdout == '/dev/nvme0n1p2'
 
-# - name: Copy mmcblk0p2 to nvme0n1p2 (long-running, about 25min)
-#   command: dd if=/dev/mmcblk0p2 of=/dev/nvme0n1p2 bs=4M status=progress
+- name: Assert root is on SD card
+  assert:
+    that: current_root.stdout == '/dev/mmcblk0p2'
+    fail_msg: "Unexpected root device: {{ current_root.stdout }}. Expected /dev/mmcblk0p2."
 
-# - name: Ensure filesystem integrity (nvme0n1p2)
-#   command: fsck -fy /dev/nvme0n1p2
-#   ignore_errors: true
+# ---------- Preflight: hard-fail asserts ----------
 
-# - name: Resize filesystems to match partition size (nvme0n1p1)
-#   command: resize2fs /dev/nvme0n1p1
-#   ignore_errors: true
+- name: Check NVMe device exists
+  stat:
+    path: /dev/nvme0n1
+  register: nvme_dev
 
-# - name: Resize filesystems to match partition size (nvme0n1p2)
-#   command: resize2fs /dev/nvme0n1p2
-#   ignore_errors: true
+- name: Assert NVMe device present
+  assert:
+    that: nvme_dev.stat.exists
+    fail_msg: "NVMe device /dev/nvme0n1 not detected. Physical attach step done? PCIe enabled?"
 
-# - name: Create /storage directory
-#   file:
-#     path: /storage
-#     state: directory
+- name: Read /boot/firmware/config.txt
+  slurp:
+    src: /boot/firmware/config.txt
+  register: config_txt_b64
 
-# - name: Mount nvme0n1p1 to /boot/firmware
-#   mount:
-#     path: /boot/firmware
-#     src: /dev/nvme0n1p1
-#     fstype: vfat
-#     state: mounted
-#     opts: defaults
+- name: Assert PCIe enabled in config.txt
+  vars:
+    cfg: "{{ config_txt_b64.content | b64decode }}"
+  assert:
+    that:
+      - "'dtparam=pciex1' in cfg"
+      - "'dtparam=pciex1_gen=3' in cfg"
+    fail_msg: "PCIe not enabled in /boot/firmware/config.txt. Run setup-nvme with --tags nvme_pre first."
 
-# - name: Mount nvme0n1p2 to /
-#   mount:
-#     path: /
-#     src: /dev/nvme0n1p2
-#     fstype: ext4
-#     state: mounted
-#     opts: defaults
-#     passno: 1
+- name: Get used space on / (MiB)
+  command: df --output=used --block-size=1M /
+  register: root_used_df
+  changed_when: false
+  check_mode: false
 
-# - name: Mount nvme0n1p3 to /storage
-#   mount:
-#     path: /storage
-#     src: /dev/nvme0n1p3
-#     fstype: ext4
-#     state: mounted
-#     opts: defaults
+- name: Get NVMe disk size (bytes)
+  command: blockdev --getsize64 /dev/nvme0n1
+  register: nvme_size_bytes
+  changed_when: false
+  check_mode: false
+
+- name: Assert NVMe has enough capacity for /
+  vars:
+    used_mib: "{{ root_used_df.stdout_lines[-1] | trim | int }}"
+    nvme_root_mib: "{{ ((nvme_size_bytes.stdout | int) // 1048576) - 513 }}"
+  assert:
+    that: (nvme_root_mib | int) > ((used_mib | int) * 12 // 10)
+    fail_msg: "NVMe root partition ({{ nvme_root_mib }}MiB) too small for / used ({{ used_mib }}MiB) + 20% margin."
+
+# ---------- NVMe state classifier ----------
+
+- name: Classify NVMe state (blank / expected / anything_else)
+  shell: |
+    set -eu
+    DEV=/dev/nvme0n1
+    LABEL=$(parted -sm "$DEV" print 2>/dev/null | awk -F: 'NR==2{print $6}')
+    if [ -z "${LABEL:-}" ] || [ "$LABEL" = "unknown" ]; then
+      echo blank; exit 0
+    fi
+    if [ "$LABEL" != "msdos" ]; then
+      echo anything_else; exit 0
+    fi
+    PART_COUNT=$(parted -sm "$DEV" print | awk -F: 'NR>2 && $1 ~ /^[0-9]+$/' | wc -l)
+    if [ "$PART_COUNT" -ne 2 ]; then
+      echo anything_else; exit 0
+    fi
+    P1_FS=$(blkid -s TYPE -o value "${DEV}p1" 2>/dev/null || echo "")
+    P2_FS=$(blkid -s TYPE -o value "${DEV}p2" 2>/dev/null || echo "")
+    P1_SIZE_MIB=$(lsblk -bno SIZE "${DEV}p1" 2>/dev/null | awk '{print int($1/1048576)}')
+    if [ "$P1_FS" = "vfat" ] && [ "$P2_FS" = "ext4" ] \
+       && [ "$P1_SIZE_MIB" -ge 500 ] && [ "$P1_SIZE_MIB" -le 520 ]; then
+      echo expected
+    else
+      echo anything_else
+    fi
+  register: nvme_state_result
+  changed_when: false
+  check_mode: false
+
+- name: Set NVMe state fact
+  set_fact:
+    nvme_state: "{{ nvme_state_result.stdout | trim }}"
+
+- name: Show NVMe state
+  debug:
+    msg: "NVMe state: {{ nvme_state }}"
+
+- name: Refuse unexpected NVMe state without nvme_force_wipe
+  assert:
+    that: nvme_state in ['blank', 'expected'] or (nvme_force_wipe | default(false) | bool)
+    fail_msg: |
+      /dev/nvme0n1 has an unexpected layout (state={{ nvme_state }}).
+      Re-run with -e nvme_force_wipe=true to wipe and reinitialize.
+
+# ---------- Wipe + partition + format (blank or force-wipe only) ----------
+
+- name: Wipe + partition + format NVMe
+  when: nvme_state == 'blank' or (nvme_force_wipe | default(false) | bool)
+  block:
+    - name: Unmount any active NVMe mounts (best effort)
+      shell: |
+        for m in /dev/nvme0n1p1 /dev/nvme0n1p2; do
+          umount "$m" 2>/dev/null || true
+        done
+      changed_when: false
+
+    - name: Wipe NVMe signatures
+      command: wipefs -a /dev/nvme0n1
+
+    - name: Create MBR (msdos) label
+      command: parted -s /dev/nvme0n1 mklabel msdos
+
+    - name: Create boot partition (vfat, 1MiB → 513MiB)
+      command: parted -s /dev/nvme0n1 mkpart primary fat32 1MiB 513MiB
+
+    - name: Set boot flag on boot partition
+      command: parted -s /dev/nvme0n1 set 1 boot on
+
+    - name: Create root partition (ext4, 513MiB → 100%)
+      command: parted -s /dev/nvme0n1 mkpart primary ext4 513MiB 100%
+
+    - name: Settle udev
+      command: udevadm settle
+      changed_when: false
+
+    - name: Format boot partition
+      command: mkfs.vfat -F 32 /dev/nvme0n1p1
+
+    - name: Format root partition
+      command: mkfs.ext4 -F /dev/nvme0n1p2
+
+# ---------- Mount clone target ----------
+
+- name: Ensure /mnt/clone exists
+  file:
+    path: /mnt/clone
+    state: directory
+    mode: "0755"
+
+- name: Mount NVMe root partition
+  shell: |
+    mountpoint -q /mnt/clone || mount /dev/nvme0n1p2 /mnt/clone
+  changed_when: false
+
+- name: Ensure /mnt/clone/boot/firmware exists
+  file:
+    path: /mnt/clone/boot/firmware
+    state: directory
+    mode: "0755"
+
+- name: Mount NVMe boot partition
+  shell: |
+    mountpoint -q /mnt/clone/boot/firmware || mount /dev/nvme0n1p1 /mnt/clone/boot/firmware
+  changed_when: false
+
+# ---------- Rsync ----------
+
+- name: Rsync / → /mnt/clone (long-running)
+  command: rsync -axH --delete --exclude=/mnt / /mnt/clone/
+  register: rsync_root
+  changed_when: rsync_root.stdout_lines | length > 0
+
+- name: Rsync /boot/firmware → /mnt/clone/boot/firmware
+  command: rsync -axH --delete /boot/firmware/ /mnt/clone/boot/firmware/
+  register: rsync_boot
+  changed_when: rsync_boot.stdout_lines | length > 0
+
+# ---------- Fix UUIDs on cloned filesystem ----------
+
+- name: Get NVMe boot PARTUUID
+  command: blkid -s PARTUUID -o value /dev/nvme0n1p1
+  register: nvme_boot_partuuid
+  changed_when: false
+
+- name: Get NVMe root PARTUUID
+  command: blkid -s PARTUUID -o value /dev/nvme0n1p2
+  register: nvme_root_partuuid
+  changed_when: false
+
+- name: Patch fstab on clone — boot PARTUUID
+  replace:
+    path: /mnt/clone/etc/fstab
+    regexp: 'PARTUUID=[A-Fa-f0-9-]+-01'
+    replace: "PARTUUID={{ nvme_boot_partuuid.stdout }}"
+
+- name: Patch fstab on clone — root PARTUUID
+  replace:
+    path: /mnt/clone/etc/fstab
+    regexp: 'PARTUUID=[A-Fa-f0-9-]+-02'
+    replace: "PARTUUID={{ nvme_root_partuuid.stdout }}"
+
+- name: Patch cmdline.txt on clone — root PARTUUID
+  replace:
+    path: /mnt/clone/boot/firmware/cmdline.txt
+    regexp: 'root=PARTUUID=\S+'
+    replace: "root=PARTUUID={{ nvme_root_partuuid.stdout }}"
+
+# ---------- Verify before flipping boot order ----------
+
+- name: Verify clone fstab references NVMe boot PARTUUID
+  command: grep -F "PARTUUID={{ nvme_boot_partuuid.stdout }}" /mnt/clone/etc/fstab
+  changed_when: false
+
+- name: Verify clone fstab references NVMe root PARTUUID
+  command: grep -F "PARTUUID={{ nvme_root_partuuid.stdout }}" /mnt/clone/etc/fstab
+  changed_when: false
+
+- name: Verify clone cmdline.txt references NVMe root PARTUUID
+  command: grep -F "root=PARTUUID={{ nvme_root_partuuid.stdout }}" /mnt/clone/boot/firmware/cmdline.txt
+  changed_when: false
+
+# ---------- Unmount ----------
+
+- name: Unmount NVMe partitions
+  shell: |
+    umount /mnt/clone/boot/firmware || true
+    umount /mnt/clone || true
+  changed_when: false
+
+# ---------- Boot order: NVMe first, SD fallback ----------
+
+- name: Read current EEPROM config
+  command: rpi-eeprom-config
+  register: eeprom_config
+  changed_when: false
+
+- name: Update boot order to 0xf61 (NVMe → SD)
+  when: "'BOOT_ORDER=0xf16' not in eeprom_config.stdout"
+  block:
+    - name: Write updated EEPROM config to temp file
+      copy:
+        content: "{{ eeprom_config.stdout | regex_replace('BOOT_ORDER=[^\\n]+', 'BOOT_ORDER=0xf16') }}\n"
+        dest: /tmp/bootconf.txt
+        mode: "0644"
+
+    - name: Apply EEPROM config
+      command: rpi-eeprom-config --apply /tmp/bootconf.txt
+
+# ---------- Reboot ----------
+
+- name: Reboot pi (still on SD; SD-fallback boot order means safe even if NVMe is bad)
+  reboot:
+    msg: "Rebooting after NVMe clone — verify findmnt / shows nvme0n1p2 after reboot"
+    reboot_timeout: 600

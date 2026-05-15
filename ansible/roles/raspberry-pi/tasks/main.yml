@@ -9,5 +9,8 @@
   tags: init
   when: "'init' in ansible_run_tags"
 - import_tasks: enable_pciex.yml
-  tags: nvme
-  when: "'nvme' in ansible_run_tags"
+  tags: nvme_pre
+  when: "'nvme_pre' in ansible_run_tags"
+- import_tasks: copy_mmc_to_nvme.yml
+  tags: nvme_post
+  when: "'nvme_post' in ansible_run_tags"

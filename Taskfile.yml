@@ -14,6 +14,11 @@ tasks:
       - uv sync
       - uv run ansible-galaxy collection install -r {{.ANSIBLE_DIR}}/requirements.yml
 
+  setup-nvme:
+    desc: "NVMe migration (pass extra args: -- --tags nvme_pre | --tags nvme_post --limit pi0,pi1,pi2)"
+    dir: "{{.ANSIBLE_DIR}}"
+    cmd: uv run ansible-playbook setup-nvme.yml {{.CLI_ARGS}}
+
   setup-cni:
     desc: "Install and configure CNI (Cilium)"
     dir: "{{.ANSIBLE_DIR}}"
