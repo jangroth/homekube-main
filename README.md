@@ -4,33 +4,33 @@ Running Upstream Kubernetes on Raspberry Pi.
 
 ---
 
-![Homekube](./doc/images/homekube2.png)
+![Homekube](./docs/images/homekube2.png)
 
 ---
 
 <div style="display: flex; justify-content: space-around;">
-  <img src="./doc/images/logo-kubernetes.svg.png" alt="kubernetes" style="height: 50px;">
-  <img src="./doc/images/logo-cilium.png" alt="cilium" style="height: 50px;">
-  <img src="./doc/images/logo-longhorn.png" alt="longhorn" style="height: 50px;">
+  <img src="./docs/images/logo-kubernetes.svg.png" alt="kubernetes" style="height: 50px;">
+  <img src="./docs/images/logo-cilium.png" alt="cilium" style="height: 50px;">
+  <img src="./docs/images/logo-longhorn.png" alt="longhorn" style="height: 50px;">
 </div>
 
 ---
 
 <div style="display: flex; justify-content: space-around;">
-  <img src="./doc/images/logo-prometheus.png" alt="prometheus" style="height: 50px;">
-  <img src="./doc/images/logo-grafana.png" alt="grafana" style="height: 50px;">
-  <img src="./doc/images/logo-loki.png" alt="loki" style="height: 50px;">
+  <img src="./docs/images/logo-prometheus.png" alt="prometheus" style="height: 50px;">
+  <img src="./docs/images/logo-grafana.png" alt="grafana" style="height: 50px;">
+  <img src="./docs/images/logo-loki.png" alt="loki" style="height: 50px;">
 </div>
 
 ---
 <div style="display: flex; justify-content: space-around;">
-  <img src="./doc/images/logo-ansible.png" alt="ansible" style="height: 50px;">
-  <img src="./doc/images/logo-argocd.png" alt="argocd" style="height: 50px;">
+  <img src="./docs/images/logo-ansible.png" alt="ansible" style="height: 50px;">
+  <img src="./docs/images/logo-argocd.png" alt="argocd" style="height: 50px;">
 </div>
 
 ---
 
-![Homekube](./doc/images/k9s.png)
+![Homekube](./docs/images/k9s.png)
 
 ---
 
@@ -105,15 +105,15 @@ graph TD
 
 ### Details
 
-See [Configuration & Logs](./doc/01_conf_logs.md).
+See [Configuration & Logs](./docs/01_conf_logs.md).
 
 ## Setup
 
 ⚠️ The following steps outline the tasks required to install Kubernetes on _my_ Raspberry Pi cluster. It's likely that _your_ cluster is  different. Use this repository as a guide, but don't expect every step to work for your system. ⚠️
 
-1. [Node configuration](./doc/02_01_node-configuration.md) (Ansible)
-2. [Kubernetes installation](./doc/02_02_kube_installation.md) (kubeadm, semi-manual)
-3. [ArgoCD rollout & App of Apps deployment](./doc/02_03_argo_rollout.md) (Ansible & ArgoCD)
+1. [Node configuration](./docs/02_01_node-configuration.md) (Ansible)
+2. [Kubernetes installation](./docs/02_02_kube_installation.md) (kubeadm, semi-manual)
+3. [ArgoCD rollout & App of Apps deployment](./docs/02_03_argo_rollout.md) (Ansible & ArgoCD)
 4. [ArgoCD application notes](https://github.com/jangroth/homekube-apps)
 
 ### Quick update
