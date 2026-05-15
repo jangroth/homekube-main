@@ -40,34 +40,26 @@ Auth key is in ansible-vault (`ansible/group_vars/raspberry_pis.yml`). Verify wi
 ### Step 5 — Add permanent WiFi networks
 
 ```bash
-# Home WiFi — highest priority
 sudo nmcli con add type wifi ifname wlan0 con-name "home" \
   ssid "<HOME_SSID>" wifi-sec.key-mgmt wpa-psk wifi-sec.psk "<HOME_PSK>" \
-  connection.autoconnect yes connection.autoconnect-priority 100
+  connection.autoconnect yes
 
-# Phone hotspot — permanent fallback
 sudo nmcli con add type wifi ifname wlan0 con-name "phone-hotspot" \
   ssid "<HOTSPOT_SSID>" wifi-sec.key-mgmt wpa-psk wifi-sec.psk "<HOTSPOT_PSK>" \
-  connection.autoconnect yes connection.autoconnect-priority 10
+  connection.autoconnect yes
 ```
 
-Pi will now reconnect to home WiFi (or hotspot) whenever the bootstrap network is unavailable.
+Pi will now reconnect to any saved network that becomes available.
 
-### Step 6 — Attach NVMe (physical)
-
-```
-sudo shutdown now
-```
-
-Physically attach 1TB NVMe to Pimoroni base, then power back on. Pi stays on SD card until `02_nvme.md` steps run.
+Bootstrap is complete. Pi is ready for the next phase.
 
 ---
 
 ## Status
 
-| Pi  | Tailscale | WiFi | NVMe attached |
-|-----|-----------|------|---------------|
-| pi0 | done      | done |               |
-| pi1 | done      | done |               |
-| pi2 | done      | done |               |
-| pi3 | pending   |      |               |
+| Pi  | Tailscale | WiFi |
+|-----|-----------|------|
+| pi0 | done      | done |
+| pi1 | done      | done |
+| pi2 | done      | done |
+| pi3 | done      | done |

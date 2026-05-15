@@ -131,7 +131,7 @@ findmnt /   # must show /dev/mmcblk0p2
 
 | Pi  | NVMe cloned | Boots from NVMe | SD fallback verified |
 |-----|-------------|-----------------|----------------------|
-| pi0 |             |                 |                      |
-| pi1 |             |                 |                      |
-| pi2 |             |                 |                      |
-| pi3 |             |                 |                      |
+| pi0 | done        | done            | done                 |
+| pi1 | done        | done            | done                 |
+| pi2 | done        | done            | done                 |
+| pi3 | done        | done            | done                 |

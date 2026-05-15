@@ -57,12 +57,14 @@ Running Upstream Kubernetes on Raspberry Pi.
 
 ### Nodes
 
-| Hostname | Device | OS | Architecture | Static IP | Internal IP |
-|-|-|-|-|-|-|
-| pi0 | Raspberry Pi 5, 8GB | Raspberry Pi OS Lite 64-bit | aarch64 | 192.168.86.220 | 10.0.0.20 |
-| pi1 | Raspberry Pi 5, 8GB | Raspberry Pi OS Lite 64-bit | aarch64 | 192.168.86.221 | 10.0.0.21 |
-| pi2 | Raspberry Pi 5, 8GB | Raspberry Pi OS Lite 64-bit | aarch64 | 192.168.86.222 | 10.0.0.22 |
-| pi3 | Raspberry Pi 5, 8GB | Raspberry Pi OS Lite 64-bit | aarch64 | 192.168.86.223 | 10.0.0.23 |
+| Hostname | Device         | OS                         | Architecture | Boot | Tailscale | k8s IP     |
+|----------|----------------|-----------------------------|--------------|------|-----------|------------|
+| pi0      | RPi 5, 8GB     | Raspberry Pi OS Lite 64bit | aarch64      | NVMe | pi0       | 10.0.0.20  |
+| pi1      | RPi 5, 8GB     | Raspberry Pi OS Lite 64bit | aarch64      | NVMe | pi1       | 10.0.0.21  |
+| pi2      | RPi 5, 8GB     | Raspberry Pi OS Lite 64bit | aarch64      | NVMe | pi2       | 10.0.0.22  |
+| pi3      | RPi 5, 8GB     | Raspberry Pi OS Lite 64bit | aarch64      | NVMe | pi3       | 10.0.0.23  |
+
+**Management access:** Tailscale (100.x.x.x MagicDNS) from darth. **k8s networking:** Physical switch (10.0.0.x); Tailscale invisible to Kubernetes.
 
 ### Kubernetes Network Architecture
 
@@ -103,18 +105,18 @@ graph TD
 
 ```
 
-### Details
-
-See [Configuration & Logs](./docs/01_conf_logs.md).
-
 ## Setup
 
-⚠️ The following steps outline the tasks required to install Kubernetes on _my_ Raspberry Pi cluster. It's likely that _your_ cluster is  different. Use this repository as a guide, but don't expect every step to work for your system. ⚠️
+⚠️ The following steps outline the tasks required to install Kubernetes on _my_ Raspberry Pi cluster. It's likely that _your_ cluster is different. Use this repository as a guide, but don't expect every step to work for your system. ⚠️
 
-1. [Node configuration](./docs/02_01_node-configuration.md) (Ansible)
-2. [Kubernetes installation](./docs/02_02_kube_installation.md) (kubeadm, semi-manual)
-3. [ArgoCD rollout & App of Apps deployment](./docs/02_03_argo_rollout.md) (Ansible & ArgoCD)
-4. [ArgoCD application notes](https://github.com/jangroth/homekube-apps)
+Follow the phases in order:
+
+1. [Phase 1: Bootstrap](./docs/01_bootstrap.md) — Imager + Tailscale + WiFi
+2. [Phase 2: NVMe Migration](./docs/02_nvme.md) — SD → NVMe boot (Ansible automation)
+3. [Phase 3: Ansible Provisioning](./docs/03_ansible.md) — Create homekube user, base packages
+4. [Phase 4: Kubernetes Install](./docs/04_kubernetes.md) — kubeadm + Cilium
+5. [Phase 5: GitOps](./docs/05_gitops.md) — ArgoCD + App-of-Apps
+6. [Apps deployment](https://github.com/jangroth/homekube-apps) — ArgoCD applications (MetalLB, Longhorn, monitoring)
 
 ### Quick update
 
