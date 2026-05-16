@@ -1,129 +1,91 @@
 # NVMe Setup — SD Card to NVMe Boot
 
-Clones the running SD card to NVMe using rsync. Creates fresh PARTUUIDs on the NVMe (avoiding PARTUUID collision when both disks are present), then updates fstab and cmdline.txt to match.
+Clones the running SD card to NVMe using rsync. Mostly automated with Ansible; two steps require physical hardware access.
 
-Run after pi is on Tailscale and NVMe is physically attached (see `01_bootstrap.md` Step 6). See DECISION-005 (rsync over dd/rpi-clone).
+Run one pi at a time using `--limit piN`. The pi must already be on Tailscale (`01_bootstrap.md`).
+
+See DECISION-005 (rsync over dd/rpi-clone).
 
 ---
 
 ## Steps
 
-### Step 1 — Update all packages
+### Step 1 — [Manual] Update packages and bootloader
 
 ```bash
 ssh boot@piN
 sudo apt-get update && sudo apt-get full-upgrade -y
-sudo reboot
-```
-
-### Step 2 — Enable PCIe and update bootloader
-
-```bash
 sudo apt-get install -y rpi-eeprom
 sudo rpi-eeprom-update -a
-```
-
-Add to `/boot/firmware/config.txt` under `[all]`:
-```
-dtparam=pciex1
-dtparam=pciex1_gen=3
-```
-
-```bash
 sudo reboot
 ```
 
-### Step 3 — [HUMAN CHECKPOINT] Attach NVMe
+Wait for the pi to come back up before continuing.
+
+### Step 2 — [Ansible] Enable PCIe
+
+From `homekube-main/ansible/`:
 
 ```bash
-sudo shutdown now
+ansible-playbook 10-nvme.yml --tags nvme_pre --limit piN -u boot -k
 ```
 
-Physically attach NVMe to Pimoroni base, power back on.
+Adds `dtparam=pciex1` and `dtparam=pciex1_gen=3` to `/boot/firmware/config.txt`. The `-u boot -k` flags are required — `homekube` user doesn't exist yet.
 
-### Step 4 — Verify NVMe detected
+### Step 3 — [Manual] Reboot, then shut down for NVMe attach
 
 ```bash
-lsblk   # must show nvme0n1 before proceeding
+ssh boot@piN sudo reboot
 ```
 
-### Step 5 — Partition and format NVMe
+Wait for the pi to come back up (PCIe now active). Then shut down for the physical step:
 
 ```bash
-# Wipe any existing partition table
-sudo wipefs -a /dev/nvme0n1
-
-# Create partitions: 512M vfat boot, rest ext4 root
-# MBR (msdos) — Pi5 firmware boots cleanly from MBR; matches SD format
-sudo parted -s /dev/nvme0n1 mklabel msdos
-sudo parted -s /dev/nvme0n1 mkpart primary fat32 1MiB 513MiB
-sudo parted -s /dev/nvme0n1 set 1 boot on
-sudo parted -s /dev/nvme0n1 mkpart primary ext4 513MiB 100%
-
-# Format
-sudo mkfs.vfat -F 32 /dev/nvme0n1p1
-sudo mkfs.ext4 /dev/nvme0n1p2
+ssh boot@piN sudo shutdown now
 ```
 
-### Step 6 — Clone SD → NVMe via rsync
+### Step 4 — [HUMAN CHECKPOINT] Attach NVMe
+
+Physically attach the NVMe to the Pimoroni base, then power on. Wait for the pi to come back up over Tailscale.
+
+Verify NVMe is detected:
+```bash
+ssh boot@piN lsblk   # must show nvme0n1
+```
+
+### Step 5 — [Ansible] Clone SD → NVMe
+
+From `homekube-main/ansible/`:
 
 ```bash
-sudo mkdir -p /mnt/clone/boot/firmware
-sudo mount /dev/nvme0n1p2 /mnt/clone
-sudo mount /dev/nvme0n1p1 /mnt/clone/boot/firmware
-
-# Sync root (excludes /proc, /sys, /dev, /run, /boot/firmware via -x)
-sudo rsync -axH --delete --exclude=/mnt / /mnt/clone/
-
-# Sync boot partition
-sudo rsync -axH --delete /boot/firmware/ /mnt/clone/boot/firmware/
+ansible-playbook 10-nvme.yml --tags nvme_post --limit piN -u boot -k
 ```
 
-### Step 7 — Fix UUIDs
+This run: partitions and formats the NVMe, clones SD → NVMe via rsync, patches `fstab` and `cmdline.txt` with fresh NVMe PARTUUIDs, verifies the patches, sets boot order to NVMe-first with SD fallback (`0xf16`), then reboots. Ansible waits for the pi to come back up.
+
+If the pi was already migrated (e.g. re-running after a successful clone), the task short-circuits cleanly.
+
+### Step 6 — [HUMAN CHECKPOINT] Remove SD card and verify
 
 ```bash
-BOOT_PARTUUID=$(sudo blkid -s PARTUUID -o value /dev/nvme0n1p1)
-ROOT_PARTUUID=$(sudo blkid -s PARTUUID -o value /dev/nvme0n1p2)
-
-sudo sed -i "s|PARTUUID=.*-01|PARTUUID=${BOOT_PARTUUID}|g" /mnt/clone/etc/fstab
-sudo sed -i "s|PARTUUID=.*-02|PARTUUID=${ROOT_PARTUUID}|g" /mnt/clone/etc/fstab
-sudo sed -i "s|root=PARTUUID=[^ ]*|root=PARTUUID=${ROOT_PARTUUID}|" /mnt/clone/boot/firmware/cmdline.txt
-
-# Verify
-cat /mnt/clone/etc/fstab
-cat /mnt/clone/boot/firmware/cmdline.txt
-
-sudo umount /mnt/clone/boot/firmware && sudo umount /mnt/clone
+ssh boot@piN sudo shutdown now
 ```
 
-### Step 8 — Set boot order: NVMe first, SD fallback
+Remove the SD card. Power on. Verify:
 
 ```bash
-sudo rpi-eeprom-config > /tmp/bootconf.txt
-sudo sed -i 's/BOOT_ORDER=.*/BOOT_ORDER=0xf16/' /tmp/bootconf.txt
-sudo rpi-eeprom-config --apply /tmp/bootconf.txt
-sudo reboot
+ssh boot@piN findmnt /   # must show /dev/nvme0n1p2
 ```
 
-### Step 9 — Verify NVMe boot
+---
 
-```bash
-sudo shutdown now
-```
+## Recovery
 
-Remove SD card, power on. Verify:
-
-```bash
-findmnt /   # must show /dev/nvme0n1p2
-```
-
-### Step 10 — Verify SD fallback
-
-Insert SD card, power on. Verify:
-
-```bash
-findmnt /   # must show /dev/mmcblk0p2
-```
+| Failure | Recovery |
+|---------|----------|
+| `nvme_post` fails mid-clone (rsync interrupted) | Re-run — rsync resumes, UUID patches are idempotent |
+| NVMe has unexpected existing partitions | Re-run with `-e nvme_force_wipe=true` |
+| Pi doesn't boot after SD removal | Reinsert SD (boot order has SD fallback); check `findmnt /` on SD boot |
 
 ---
 
