@@ -1,13 +1,19 @@
 ---
+- name: Ensure /etc/apt/keyrings directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
 - name: Add Kubernetes apt repository key
-  apt_key:
-    url: https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version }}/deb/Release.key
-    state: present
-    keyring: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  ansible.builtin.shell:
+    cmd: curl -fsSL https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version.split('.')[:2] | join('.') }}/deb/Release.key | gpg --batch --yes --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  become: true
+  changed_when: false
 
 - name: Add Kubernetes apt repository
   apt_repository:
-    repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version }}/deb/ /"
+    repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version.split('.')[:2] | join('.') }}/deb/ /"
     state: present
     filename: kubernetes
     update_cache: yes

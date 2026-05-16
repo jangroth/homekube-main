@@ -6,6 +6,7 @@
 - name: Set static IP address
   nmcli:
     conn_name: "Wired connection 1"
+    ifname: eth0
     state: present
     type: ethernet
     ip4: "{{ ip_addresses_internal[inventory_hostname] }}"
