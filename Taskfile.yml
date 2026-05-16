@@ -14,37 +14,37 @@ tasks:
       - uv sync
       - uv run ansible-galaxy collection install -r {{.ANSIBLE_DIR}}/requirements.yml
 
-  nvme:
+  10-nvme:
     desc: "NVMe migration (pass extra args: -- --tags nvme_pre | --tags nvme_post --limit pi0,pi1,pi2)"
     dir: "{{.ANSIBLE_DIR}}"
     cmd: uv run ansible-playbook 10-nvme.yml {{.CLI_ARGS}}
 
-  configure-darth:
+  20-configure-darth:
     desc: "Configure darth: SSH config, /etc/hosts, tooling"
     dir: "{{.ANSIBLE_DIR}}"
     cmd: uv run ansible-playbook 20-configure-darth.yml
 
-  provision-pis:
+  21-provision-pis:
     desc: "Provision pis: homekube user, keys, base OS, swap"
     dir: "{{.ANSIBLE_DIR}}"
     cmd: uv run ansible-playbook 21-provision-pis.yml {{.CLI_ARGS}}
 
-  k8s-nodes:
+  22-k8s-nodes:
     desc: "K8s prerequisites on all nodes: cgroups, containerd, packages"
     dir: "{{.ANSIBLE_DIR}}"
     cmd: uv run ansible-playbook 22-k8s-nodes.yml {{.CLI_ARGS}}
 
-  k8s-control-plane:
+  30-k8s-control-plane:
     desc: "kubeadm init on pi0"
     dir: "{{.ANSIBLE_DIR}}"
     cmd: uv run ansible-playbook 30-k8s-control-plane.yml
 
-  setup-cni:
+  40-cni:
     desc: "Install and configure CNI (Cilium)"
     dir: "{{.ANSIBLE_DIR}}"
     cmd: uv run ansible-playbook 40-cni.yml
 
-  setup-gitops:
+  50-gitops:
     desc: "Install and configure GitOps (ArgoCD)"
     dir: "{{.ANSIBLE_DIR}}"
     cmd: uv run ansible-playbook 50-gitops.yml
