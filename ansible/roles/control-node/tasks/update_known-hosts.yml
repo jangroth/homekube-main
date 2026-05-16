@@ -1,40 +1,20 @@
 ---
-- name: Get SSH host keys from all nodes (by hostname)
-  command: ssh-keyscan "{{ item.key }}"
-  register: host_keys_by_name
-  with_dict: "{{ ip_addresses_external }}"
+- name: Get SSH host keys from all nodes
+  command: ssh-keyscan "{{ item }}"
+  register: host_keys
+  loop: "{{ groups['all_nodes'] }}"
 
-- name: Get SSH host keys from all nodes (by IP)
-  command: ssh-keyscan "{{ item.value }}"
-  register: host_keys_by_ip
-  with_dict: "{{ ip_addresses_external }}"
-
-- name: Remove existing host keys from known_hosts (by hostname)
+- name: Remove existing host keys from known_hosts
   known_hosts:
-    name: "{{ item.item.key }}"
+    name: "{{ item.item }}"
     state: absent
     path: "~/.ssh/known_hosts"
-  with_items: "{{ host_keys_by_name.results }}"
+  loop: "{{ host_keys.results }}"
 
-- name: Remove existing host keys from known_hosts (by IP)
+- name: Add host keys to known_hosts
   known_hosts:
-    name: "{{ item.item.value }}"
-    state: absent
-    path: "~/.ssh/known_hosts"
-  with_items: "{{ host_keys_by_ip.results }}"
-
-- name: Add host keys to known_hosts (by hostname)
-  known_hosts:
-    name: "{{ item.item.key }}"
+    name: "{{ item.item }}"
     key: "{{ item.stdout_lines | reject('match', '^#') | join('\n') }}"
     state: present
     path: "~/.ssh/known_hosts"
-  with_items: "{{ host_keys_by_name.results }}"
-
-- name: Add host keys to known_hosts (by IP)
-  known_hosts:
-    name: "{{ item.item.value }}"
-    key: "{{ item.stdout_lines | reject('match', '^#') | join('\n') }}"
-    state: present
-    path: "~/.ssh/known_hosts"
-  with_items: "{{ host_keys_by_ip.results }}"
+  loop: "{{ host_keys.results }}"

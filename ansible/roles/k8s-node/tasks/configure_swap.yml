@@ -1,0 +1,71 @@
+---
+- name: Check installed packages
+  package_facts:
+    manager: auto
+
+- name: Check service status
+  service_facts:
+
+- name: Turn off dphys-swapfile
+  command: dphys-swapfile swapoff
+  when: "'dphys-swapfile' in ansible_facts.packages"
+
+- name: Stop and disable dphys-swapfile service
+  systemd:
+    name: dphys-swapfile
+    state: stopped
+    enabled: false
+  when: "'dphys-swapfile.service' in ansible_facts.services"
+
+- name: Uninstall dphys-swapfile
+  command: dphys-swapfile uninstall
+  when: "'dphys-swapfile' in ansible_facts.packages"
+
+- name: Remove and purge dphys-swapfile package
+  apt:
+    pkg: dphys-swapfile
+    state: absent
+    purge: yes
+    autoclean: yes
+    autoremove: yes
+  when: "'dphys-swapfile' in ansible_facts.packages"
+
+- name: Remove stale dphys-swapfile swap file
+  file:
+    path: /var/swap
+    state: absent
+
+- name: Check if swapfile exists
+  stat:
+    path: /var/swap.img
+  register: swap_file
+
+- name: Create swapfile
+  command: fallocate -l {{ swap_size_gb }}G /var/swap.img
+  when: not swap_file.stat.exists
+
+- name: Set swapfile permissions
+  file:
+    path: /var/swap.img
+    mode: '0600'
+    owner: root
+    group: root
+
+- name: Format swapfile
+  command: mkswap /var/swap.img
+  when: not swap_file.stat.exists
+
+- name: Check active swap
+  command: swapon --show=NAME --noheadings
+  register: active_swap
+  changed_when: false
+
+- name: Enable swapfile
+  command: swapon /var/swap.img
+  when: "'/var/swap.img' not in active_swap.stdout"
+
+- name: Persist swapfile in fstab
+  lineinfile:
+    path: /etc/fstab
+    line: "/var/swap.img none swap sw 0 0"
+    state: present

@@ -4,11 +4,6 @@ ip_addresses_internal:
   pi1: "10.0.0.21/24"
   pi2: "10.0.0.22/24"
   pi3: "10.0.0.23/24"
-ip_addresses_external:
-  pi0: "192.168.86.220"
-  pi1: "192.168.86.221"
-  pi2: "192.168.86.222"
-  pi3: "192.168.86.223"
 
 tailscale_auth_key: !vault |
           $ANSIBLE_VAULT;1.1;AES256

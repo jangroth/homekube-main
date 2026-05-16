@@ -1,9 +1,16 @@
 ---
-- name: Set connection variables for initial setup
+- name: Probe whether homekube user already exists
+  ansible.builtin.raw: id homekube
+  register: homekube_user_probe
+  ignore_errors: true
+  changed_when: false
+
+- name: Use bootstrap credentials only if homekube does not exist
   set_fact:
     ansible_user: boot
     ansible_ssh_pass: boot
   no_log: true
+  when: homekube_user_probe.rc != 0
 
 - name: Create user
   user:
@@ -61,11 +68,10 @@
     src: "/home/{{ ssh_username }}/.ssh/id_ed25519.pub"
     dest: "{{ role_path }}/files/pub_keys/{{ inventory_hostname }}.pub"
     flat: yes
-  # become_user: "{{ ssh_username }}"
 
-- name: Add other node's public keys to authorized_keys
+- name: Add all public keys to authorized_keys
   authorized_key:
-    user: homekube
+    user: "{{ ssh_username }}"
     key: "{{ lookup('file', item) }}"
     state: present
   with_fileglob:
@@ -87,3 +93,8 @@
     line: "PermitRootLogin no"
     state: present
   notify: Restart sshd
+
+- name: Lock boot user
+  ansible.builtin.user:
+    name: boot
+    password_lock: yes

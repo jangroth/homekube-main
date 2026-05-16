@@ -1,10 +1,10 @@
 ---
 - import_tasks: update_system.yml
   tags: update-only
-- import_tasks: disable_swap.yml
 - import_tasks: configure_kernel.yml
   tags: update-only
 - import_tasks: configure_networking.yml
+- import_tasks: configure_etc_hosts.yml
 - import_tasks: reload_networking_modules.yml
   tags: update-only
 - import_tasks: configure_cgroups.yml
@@ -15,9 +15,8 @@
   tags: unhold-kube
   when: "'unhold-kube' in ansible_run_tags"
 - import_tasks: install_kube_packages.yml
+- import_tasks: configure_swap.yml
 - import_tasks: install_etcdctl.yml
-  tags: update-only
-- import_tasks: install_tailscale.yml
   tags: update-only
 - import_tasks: display_dependencies.yml
   tags: update-only

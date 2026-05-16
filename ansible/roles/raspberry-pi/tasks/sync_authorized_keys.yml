@@ -1,0 +1,8 @@
+---
+- name: Sync authorized_keys from pub_keys/
+  authorized_key:
+    user: "{{ ssh_username }}"
+    key: "{{ lookup('file', item) }}"
+    state: present
+  with_fileglob:
+    - "{{ role_path }}/files/pub_keys/*.pub"

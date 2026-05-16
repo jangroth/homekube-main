@@ -1,0 +1,4 @@
+---
+# Placeholder — join worker nodes to the cluster.
+# Run after 30-k8s-control-plane.yml has completed kubeadm init.
+# Implementation tracked in Phase 4.

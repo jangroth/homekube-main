@@ -14,33 +14,53 @@ tasks:
       - uv sync
       - uv run ansible-galaxy collection install -r {{.ANSIBLE_DIR}}/requirements.yml
 
-  setup-nvme:
+  nvme:
     desc: "NVMe migration (pass extra args: -- --tags nvme_pre | --tags nvme_post --limit pi0,pi1,pi2)"
     dir: "{{.ANSIBLE_DIR}}"
-    cmd: uv run ansible-playbook setup-nvme.yml {{.CLI_ARGS}}
+    cmd: uv run ansible-playbook 10-nvme.yml {{.CLI_ARGS}}
+
+  configure-darth:
+    desc: "Configure darth: SSH config, /etc/hosts, tooling"
+    dir: "{{.ANSIBLE_DIR}}"
+    cmd: uv run ansible-playbook 20-configure-darth.yml
+
+  provision-pis:
+    desc: "Provision pis: homekube user, keys, base OS, swap"
+    dir: "{{.ANSIBLE_DIR}}"
+    cmd: uv run ansible-playbook 21-provision-pis.yml {{.CLI_ARGS}}
+
+  k8s-nodes:
+    desc: "K8s prerequisites on all nodes: cgroups, containerd, packages"
+    dir: "{{.ANSIBLE_DIR}}"
+    cmd: uv run ansible-playbook 22-k8s-nodes.yml {{.CLI_ARGS}}
+
+  k8s-control-plane:
+    desc: "kubeadm init on pi0"
+    dir: "{{.ANSIBLE_DIR}}"
+    cmd: uv run ansible-playbook 30-k8s-control-plane.yml
 
   setup-cni:
     desc: "Install and configure CNI (Cilium)"
     dir: "{{.ANSIBLE_DIR}}"
-    cmd: uv run ansible-playbook 05-setup-cni.yml
+    cmd: uv run ansible-playbook 40-cni.yml
 
   setup-gitops:
     desc: "Install and configure GitOps (ArgoCD)"
     dir: "{{.ANSIBLE_DIR}}"
-    cmd: uv run ansible-playbook 06-setup-gitops.yml
+    cmd: uv run ansible-playbook 50-gitops.yml
 
   update-all:
-    desc: "Update both control node and Kubernetes nodes"
+    desc: "Update darth and all Kubernetes nodes"
     deps:
-      - update-control-node
+      - update-darth
       - update-k8s-nodes
 
-  update-control-node:
-    desc: "Update control node (darth) with tools and configuration"
+  update-darth:
+    desc: "Update darth: tools and configuration"
     dir: "{{.ANSIBLE_DIR}}"
-    cmd: uv run ansible-playbook 01-update-control-node.yml --tags update-only
+    cmd: uv run ansible-playbook 20-configure-darth.yml --tags update-only
 
   update-k8s-nodes:
     desc: "Update Kubernetes nodes (system packages, storage)"
     dir: "{{.ANSIBLE_DIR}}"
-    cmd: uv run ansible-playbook 03-setup-k8s-nodes.yml --tags update-only
+    cmd: uv run ansible-playbook 22-k8s-nodes.yml --tags update-only

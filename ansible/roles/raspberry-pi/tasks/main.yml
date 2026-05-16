@@ -14,3 +14,5 @@
 - import_tasks: copy_mmc_to_nvme.yml
   tags: nvme_post
   when: "'nvme_post' in ansible_run_tags"
+- import_tasks: sync_authorized_keys.yml
+- import_tasks: verify_sshd_config.yml

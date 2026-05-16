@@ -12,12 +12,14 @@ Run in order for a full cluster setup. After fresh SD card boot, start from step
 
 | # | Playbook | What it does |
 |---|----------|-------------|
-| 01 | `01-update-control-node.yml` | Configures darth: installs tooling, updates `/etc/hosts`, `~/.ssh/config`, `known_hosts` |
-| 02 | `02-prepare-pis.yml` | Creates `homekube` user (from `boot` user), installs base packages, configures OS |
-| 03 | `03-setup-k8s-nodes.yml` | All nodes: cgroups, kernel params, containerd, k8s packages, storage |
-| 04 | `04-setup-k8s-control-plane.yml` | pi0: kubeadm init, copies kubeconfig |
-| 05 | `05-setup-cni.yml` | Installs Cilium via helm |
-| 06 | `06-setup-gitops.yml` | Installs ArgoCD via helm, deploys App-of-Apps |
+| 10 | `10-nvme.yml` | NVMe migration: enable PCIe, clone SD → NVMe, configure boot order |
+| 20 | `20-configure-darth.yml` | Configures darth: installs tooling, updates `/etc/hosts`, `~/.ssh/config`, `known_hosts` |
+| 21 | `21-provision-pis.yml` | Creates `homekube` user (from `boot` user), deploys SSH keys, configures OS, swap |
+| 22 | `22-k8s-nodes.yml` | All nodes: cgroups, kernel params, containerd, k8s packages, storage |
+| 30 | `30-k8s-control-plane.yml` | pi0: kubeadm init, copies kubeconfig |
+| 31 | `31-k8s-workers.yml` | pi1–pi3: join worker nodes to cluster |
+| 40 | `40-cni.yml` | Installs Cilium via helm |
+| 50 | `50-gitops.yml` | Installs ArgoCD via helm, deploys App-of-Apps |
 
 **NVMe boot** is handled by the `raspberry-pi` role (enable_pciex → configure_nvme → copy_mmc_to_nvme), but requires a **physical hardware step first** — see parent CLAUDE.md.
 
@@ -34,8 +36,8 @@ task update-all
 
 # Directly
 cd homekube-main/ansible
-ansible-playbook 02-prepare-pis.yml
-ansible-playbook 03-setup-k8s-nodes.yml --tags update-only
+ansible-playbook 21-provision-pis.yml
+ansible-playbook 22-k8s-nodes.yml --tags update-only
 ```
 
 ---
