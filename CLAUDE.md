@@ -30,14 +30,14 @@ Run in order for a full cluster setup. After fresh SD card boot, start from step
 ```shell
 # Via Task (preferred)
 cd homekube-main
-task setup-cni
-task setup-gitops
+task 40-cni
+task 50-gitops
 task update-all
 
 # Directly
 cd homekube-main/ansible
-ansible-playbook 21-provision-pis.yml
-ansible-playbook 22-k8s-nodes.yml --tags update-only
+uv run ansible-playbook 21-provision-pis.yml
+uv run ansible-playbook 22-k8s-nodes.yml --tags update-only
 ```
 
 ---
