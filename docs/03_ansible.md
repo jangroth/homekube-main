@@ -13,14 +13,13 @@ Complete these before running any playbook.
 ### 1. Darth keypair
 
 ```bash
-ls ~/.ssh/id_darth_homekube \
-  || ssh-keygen -t ed25519 -f ~/.ssh/id_darth_homekube -C "darth@homekube"
+ssh-keygen -t ed25519 -f ~/.ssh/id_darth_homekube -C "darth@homekube"
 ```
 
 Commit the public key to the repo:
 
 ```bash
-cp ~/.ssh/id_darth_homekube.pub roles/raspberry-pi/files/pub_keys/id_darth_homekube.pub
+cp ~/.ssh/id_darth_homekube.pub homekube-main/ansible/roles/raspberry-pi/files/pub_keys/id_darth_homekube.pub
 git add roles/raspberry-pi/files/pub_keys/id_darth_homekube.pub
 git commit -m "Add darth homekube public key"
 ```
@@ -37,7 +36,7 @@ Copy the public key to darth and commit it:
 
 ```bash
 # from darth:
-scp kylo:~/.ssh/id_kylo_homekube.pub roles/raspberry-pi/files/pub_keys/id_kylo_homekube.pub
+cp ~/.ssh/id_kylo_homekube.pub homekube-main/ansible/roles/raspberry-pi/files/pub_keys/id_kylo_homekube.pub
 git add roles/raspberry-pi/files/pub_keys/id_kylo_homekube.pub
 git commit -m "Add kylo homekube public key"
 ```
