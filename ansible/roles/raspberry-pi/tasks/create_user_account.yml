@@ -3,14 +3,16 @@
   ansible.builtin.raw: id homekube
   register: homekube_user_probe
   ignore_errors: true
+  ignore_unreachable: true
   changed_when: false
 
 - name: Use bootstrap credentials only if homekube does not exist
   set_fact:
     ansible_user: boot
     ansible_ssh_pass: boot
+    ansible_become_pass: boot
   no_log: true
-  when: homekube_user_probe.rc != 0
+  when: homekube_user_probe.unreachable | default(false) or homekube_user_probe.rc | default(1) != 0
 
 - name: Create user
   user:
