@@ -6,12 +6,6 @@
 
 # basics
 
-- name: Update ansible
-  community.general.homebrew:
-    name: ansible
-    state: latest
-  delegate_to: localhost
-
 - name: Install/update kubectl
   community.general.homebrew:
     name: kubectl
@@ -30,7 +24,7 @@
   register: helm_plugins
 
 - name: Install helm diff plugin
-  ansible.builtin.shell: helm plugin install https://github.com/databus23/helm-diff
+  ansible.builtin.shell: helm plugin install --verify=false https://github.com/databus23/helm-diff
   delegate_to: localhost
   when: "'diff' not in helm_plugins.stdout"
 
@@ -87,13 +81,12 @@
   delegate_to: localhost
   when: longhorn_version_check.rc != 0 or longhorn_version not in longhorn_version_check.stdout
 
-- name: Install Longhorn CLI to /usr/local/bin
+- name: Install Longhorn CLI to /opt/homebrew/bin
   ansible.builtin.copy:
     src: "{{ playbook_dir }}/../downloads/longhornctl-darwin-arm64"
-    dest: /usr/local/bin/longhornctl
+    dest: /opt/homebrew/bin/longhornctl
     mode: "0755"
     remote_src: yes
-  become: true
   delegate_to: localhost
   register: longhorn_install
   when: longhorn_version_check.rc != 0 or longhorn_version not in longhorn_version_check.stdout

@@ -19,8 +19,9 @@ ssh-keygen -t ed25519 -f ~/.ssh/id_darth_homekube -C "darth@homekube"
 Commit the public key to the repo:
 
 ```bash
-cp ~/.ssh/id_darth_homekube.pub homekube-main/ansible/roles/raspberry-pi/files/pub_keys/id_darth_homekube.pub
-git add roles/raspberry-pi/files/pub_keys/id_darth_homekube.pub
+cd homekube-main
+cp ~/.ssh/id_darth_homekube.pub ansible/roles/raspberry-pi/files/pub_keys/id_darth_homekube.pub
+git add ansible/roles/raspberry-pi/files/pub_keys/id_darth_homekube.pub
 git commit -m "Add darth homekube public key"
 ```
 
@@ -35,9 +36,9 @@ ssh-keygen -t ed25519 -f ~/.ssh/id_kylo_homekube -C "kylo@homekube"
 Copy the public key to darth and commit it:
 
 ```bash
-# from darth:
-cp ~/.ssh/id_kylo_homekube.pub homekube-main/ansible/roles/raspberry-pi/files/pub_keys/id_kylo_homekube.pub
-git add roles/raspberry-pi/files/pub_keys/id_kylo_homekube.pub
+cd homekube-main
+cp ~/.ssh/id_kylo_homekube.pub ansible/roles/raspberry-pi/files/pub_keys/id_kylo_homekube.pub
+git add ansible/roles/raspberry-pi/files/pub_keys/id_kylo_homekube.pub
 git commit -m "Add kylo homekube public key"
 ```
 
