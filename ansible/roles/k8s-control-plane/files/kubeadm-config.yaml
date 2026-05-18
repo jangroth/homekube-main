@@ -19,6 +19,9 @@ nodeRegistration:
   imagePullPolicy: IfNotPresent
   imagePullSerial: true
   name: pi0 # custom
+  kubeletExtraArgs:
+    - name: node-ip
+      value: "10.0.0.20"
 timeouts:
   controlPlaneComponentHealthCheck: 4m0s
   discovery: 5m0s
@@ -27,13 +30,6 @@ timeouts:
   kubernetesAPICall: 1m0s
   tlsBootstrap: 5m0s
   upgradeManifests: 5m0s
-
----
-# https://kubernetes.io/docs/reference/config-api/kubeadm-config.v1beta4/
-apiVersion: kubeadm.k8s.io/v1beta4
-kind: JoinConfiguration
-skipPhases:
-  - addon/kube-proxy # custom, -> cilium
 
 ---
 # https://kubernetes.io/docs/reference/config-api/kubeadm-config.v1beta4/#kubeadm-k8s-io-v1beta4-ClusterConfiguration
@@ -53,6 +49,7 @@ caCertificateValidityPeriod: 87600h0m0s
 certificateValidityPeriod: 8760h0m0s
 certificatesDir: /etc/kubernetes/pki
 clusterName: homekube # custom
+controlPlaneEndpoint: "10.0.0.20:6443" # custom
 controllerManager: {}
 dns: {}
 encryptionAlgorithm: RSA-2048
@@ -63,7 +60,7 @@ imageRepository: registry.k8s.io
 kubernetesVersion: 1.36.1 # custom
 networking:
   dnsDomain: cluster.local
-  podSubnet: "10.244.0.0/16" # custom cHEKC
+  podSubnet: "10.244.0.0/16" # custom
   serviceSubnet: 10.96.0.0/12
 scheduler: {}
 
@@ -85,6 +82,8 @@ authorization:
     cacheAuthorizedTTL: 0s
     cacheUnauthorizedTTL: 0s
 cgroupDriver: systemd
+failSwapOn: false # custom
+resolvConf: /run/systemd/resolve/resolv.conf # custom: bypass systemd-resolved stub to avoid coredns loop
 clusterDNS:
   - 10.96.0.10
 clusterDomain: cluster.local
@@ -96,7 +95,8 @@ fileCheckFrequency: 0s
 healthzBindAddress: 127.0.0.1
 healthzPort: 10248
 httpCheckFrequency: 20s
-memorySwap: {}
+memorySwap:
+  swapBehavior: LimitedSwap # custom
 nodeStatusReportFrequency: 5m
 nodeStatusUpdateFrequency: 10s
 rotateCertificates: true

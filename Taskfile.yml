@@ -39,6 +39,11 @@ tasks:
     dir: "{{.ANSIBLE_DIR}}"
     cmd: uv run ansible-playbook 30-k8s-control-plane.yml
 
+  31-k8s-workers:
+    desc: "Join pi1-pi3 as worker nodes"
+    dir: "{{.ANSIBLE_DIR}}"
+    cmd: uv run ansible-playbook 31-k8s-workers.yml
+
   40-cni:
     desc: "Install and configure CNI (Cilium)"
     dir: "{{.ANSIBLE_DIR}}"

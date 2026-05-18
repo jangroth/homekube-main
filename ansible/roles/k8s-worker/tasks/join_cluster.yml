@@ -1,0 +1,39 @@
+---
+- name: Check if node is already joined
+  ansible.builtin.stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: kubelet_conf
+
+- name: Pre-pull worker node images
+  ansible.builtin.command: >
+    kubeadm config images pull
+    --kubernetes-version {{ kubernetes_version }}
+  changed_when: true
+  when: not kubelet_conf.stat.exists
+
+- name: Template join configuration
+  ansible.builtin.template:
+    src: join-config.yaml.j2
+    dest: /tmp/join-config.yaml
+    mode: "0600"
+  when: not kubelet_conf.stat.exists
+
+- name: Join cluster
+  ansible.builtin.command: >
+    kubeadm join
+    --config /tmp/join-config.yaml
+    --ignore-preflight-errors=Swap
+  changed_when: true
+  when: not kubelet_conf.stat.exists
+
+- name: Verify node registered with control plane
+  ansible.builtin.command: >
+    kubectl --kubeconfig {{ lookup('env', 'HOME') }}/.kube/homekube.config
+    get node {{ inventory_hostname }}
+  delegate_to: localhost
+  become: false
+  register: node_check
+  until: node_check.rc == 0
+  retries: 12
+  delay: 5
+  changed_when: false

@@ -3,6 +3,9 @@
   hosts: pi0
   become: false
   gather_facts: true
-  
+  vars:
+    local_kubeconfig: "{{ lookup('env', 'HOME') }}/.kube/homekube.config"
+  environment:
+    KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/homekube.config"
   roles:
     - cni

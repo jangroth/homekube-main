@@ -1,0 +1,20 @@
+---
+- name: Check if cluster is already initialised
+  ansible.builtin.stat:
+    path: /etc/kubernetes/admin.conf
+  register: admin_conf
+
+- name: Pre-pull control-plane images
+  ansible.builtin.command: >
+    kubeadm config images pull
+    --kubernetes-version {{ kubernetes_version }}
+  changed_when: true
+  when: not admin_conf.stat.exists
+
+- name: Run kubeadm init
+  ansible.builtin.command: >
+    kubeadm init
+    --config /home/{{ ssh_username }}/kubeadm-config.yaml
+    --ignore-preflight-errors=Swap
+  changed_when: true
+  when: not admin_conf.stat.exists

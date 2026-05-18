@@ -1,0 +1,25 @@
+---
+# https://kubernetes.io/docs/reference/config-api/kubeadm-config.v1beta4/
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: JoinConfiguration
+discovery:
+  bootstrapToken:
+    apiServerEndpoint: "10.0.0.20:6443"
+    token: "{{ kubeadm_token }}"
+    caCertHashes:
+      - "sha256:{{ kubeadm_ca_hash }}"
+nodeRegistration:
+  criSocket: unix:///var/run/containerd/containerd.sock
+  kubeletExtraArgs:
+    - name: node-ip
+      value: "{{ node_switch_ip }}"
+
+---
+# https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/#kubelet-config-k8s-io-v1beta1-KubeletConfiguration
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+cgroupDriver: systemd
+failSwapOn: false
+memorySwap:
+  swapBehavior: LimitedSwap
+resolvConf: /run/systemd/resolve/resolv.conf
