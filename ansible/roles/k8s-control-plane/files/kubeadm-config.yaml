@@ -83,7 +83,7 @@ authorization:
     cacheUnauthorizedTTL: 0s
 cgroupDriver: systemd
 failSwapOn: false # custom
-resolvConf: /run/systemd/resolve/resolv.conf # custom: bypass systemd-resolved stub to avoid coredns loop
+resolvConf: /etc/kubernetes/resolv.conf # custom: pod DNS via eth0; Tailscale DNS not reachable from pod network
 clusterDNS:
   - 10.96.0.10
 clusterDomain: cluster.local
