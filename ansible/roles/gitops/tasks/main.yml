@@ -1,8 +1,10 @@
 ---
 - name: Check if Kubernetes cluster is ready
-  ansible.builtin.shell: kubectl get nodes {{ ansible_hostname }} --no-headers
-  register: k8s_node_status
-  failed_when: k8s_node_status.rc != 0
+  kubernetes.core.k8s_info:
+    kind: Node
+    name: "{{ ansible_hostname }}"
+  register: k8s_node_info
+  failed_when: k8s_node_info.resources | length == 0
   changed_when: false
   delegate_to: localhost
 
@@ -20,23 +22,23 @@
   register: argocd_release
   failed_when: false
 
-- name: Install/Upgrade ArgoCD via helm command
-  ansible.builtin.shell: |
-    helm upgrade --install argocd argo/argo-cd \
-      --version "{{ argocd_helm_chart_version }}" \
-      --namespace argocd \
-      --create-namespace \
-      --values "{{ role_path }}/files/argocd-helm-values.yaml" \
-      --wait
+- name: Install/Upgrade ArgoCD via Helm
+  kubernetes.core.helm:
+    name: argocd
+    chart_ref: argo/argo-cd
+    chart_version: "{{ argocd_helm_chart_version }}"
+    release_namespace: argocd
+    create_namespace: true
+    values_files:
+      - "{{ role_path }}/files/argocd-helm-values.yaml"
+    wait: true
   delegate_to: localhost
   register: argocd_install_result
-  changed_when: "'has been upgraded' in argocd_install_result.stdout or 'has been installed' in argocd_install_result.stdout"
 
 - name: Display ArgoCD installation result
   ansible.builtin.debug:
     msg: |
       ArgoCD {{ 'installed' if argocd_release.status is not defined else 'upgraded' }} successfully
-      Chart: {{ argocd_install_result.chart | default('argo/argo-cd') }}
       Version: {{ argocd_helm_chart_version }}
       Changed: {{ argocd_install_result.changed }}
 
