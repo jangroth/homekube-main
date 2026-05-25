@@ -65,6 +65,12 @@
   delegate_to: localhost
   register: argocd_install
 
+- name: Install kubeseal CLI
+  community.general.homebrew:
+    name: kubeseal
+    state: latest
+  delegate_to: localhost
+
 - name: Check if Longhorn CLI is already installed with correct version
   ansible.builtin.command: longhornctl version
   delegate_to: localhost
