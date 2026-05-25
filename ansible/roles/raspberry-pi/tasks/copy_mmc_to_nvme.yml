@@ -78,14 +78,16 @@
       echo anything_else; exit 0
     fi
     PART_COUNT=$(parted -sm "$DEV" print | awk -F: 'NR>2 && $1 ~ /^[0-9]+$/' | wc -l)
-    if [ "$PART_COUNT" -ne 2 ]; then
+    if [ "$PART_COUNT" -ne 3 ]; then
       echo anything_else; exit 0
     fi
     P1_FS=$(blkid -s TYPE -o value "${DEV}p1" 2>/dev/null || echo "")
     P2_FS=$(blkid -s TYPE -o value "${DEV}p2" 2>/dev/null || echo "")
+    P3_LABEL=$(blkid -s LABEL -o value "${DEV}p3" 2>/dev/null || echo "")
     P1_SIZE_MIB=$(lsblk -bno SIZE "${DEV}p1" 2>/dev/null | awk '{print int($1/1048576)}')
     if [ "$P1_FS" = "vfat" ] && [ "$P2_FS" = "ext4" ] \
-       && [ "$P1_SIZE_MIB" -ge 500 ] && [ "$P1_SIZE_MIB" -le 520 ]; then
+       && [ "$P1_SIZE_MIB" -ge 500 ] && [ "$P1_SIZE_MIB" -le 520 ] \
+       && [ "$P3_LABEL" = "storage" ]; then
       echo expected
     else
       echo anything_else
@@ -133,8 +135,11 @@
     - name: Set boot flag on boot partition
       command: parted -s /dev/nvme0n1 set 1 boot on
 
-    - name: Create root partition (ext4, 513MiB → 100%)
-      command: parted -s /dev/nvme0n1 mkpart primary ext4 513MiB 100%
+    - name: Create root partition (ext4, 513MiB → 81920MiB)
+      command: parted -s /dev/nvme0n1 mkpart primary ext4 513MiB 81920MiB
+
+    - name: Create storage partition (ext4, 81920MiB → 100%)
+      command: parted -s /dev/nvme0n1 mkpart primary ext4 81920MiB 100%
 
     - name: Settle udev
       command: udevadm settle
@@ -145,6 +150,9 @@
 
     - name: Format root partition
       command: mkfs.ext4 -F /dev/nvme0n1p2
+
+    - name: Format storage partition
+      command: mkfs.ext4 -L storage /dev/nvme0n1p3
 
 # ---------- Mount clone target ----------
 
@@ -214,6 +222,18 @@
 
 # ---------- Verify before flipping boot order ----------
 
+- name: Create /storage mountpoint on clone
+  file:
+    path: /mnt/clone/storage
+    state: directory
+    mode: "0755"
+
+- name: Add /storage fstab entry on clone
+  lineinfile:
+    path: /mnt/clone/etc/fstab
+    line: 'LABEL=storage  /storage  ext4  defaults  0  2'
+    state: present
+
 - name: Verify clone fstab references NVMe boot PARTUUID
   command: grep -F "PARTUUID={{ nvme_boot_partuuid.stdout }}" /mnt/clone/etc/fstab
   changed_when: false
@@ -241,12 +261,12 @@
   register: eeprom_config
   changed_when: false
 
-- name: Update boot order to 0xf61 (NVMe → SD)
-  when: "'BOOT_ORDER=0xf16' not in eeprom_config.stdout"
+- name: Set boot order to 0xf61 (SD first, NVMe fallback)
+  when: "'BOOT_ORDER=0xf61' not in eeprom_config.stdout"
   block:
     - name: Write updated EEPROM config to temp file
       copy:
-        content: "{{ eeprom_config.stdout | regex_replace('BOOT_ORDER=[^\\n]+', 'BOOT_ORDER=0xf16') }}\n"
+        content: "{{ eeprom_config.stdout | regex_replace('BOOT_ORDER=[^\\n]+', 'BOOT_ORDER=0xf61') }}\n"
         dest: /tmp/bootconf.txt
         mode: "0644"
 
@@ -255,7 +275,7 @@
 
 # ---------- Reboot ----------
 
-- name: Reboot pi (still on SD; SD-fallback boot order means safe even if NVMe is bad)
+- name: Reboot pi (no SD card required — falls through to NVMe with 0xf61)
   reboot:
     msg: "Rebooting after NVMe clone — verify findmnt / shows nvme0n1p2 after reboot"
     reboot_timeout: 600
