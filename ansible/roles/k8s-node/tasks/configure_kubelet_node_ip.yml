@@ -1,0 +1,10 @@
+---
+- name: Configure kubelet node IP
+  ansible.builtin.copy:
+    dest: /etc/default/kubelet
+    content: |
+      KUBELET_EXTRA_ARGS="--node-ip={{ node_switch_ip }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart kubelet
