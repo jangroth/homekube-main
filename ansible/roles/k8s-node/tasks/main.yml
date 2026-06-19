@@ -20,5 +20,6 @@
 - import_tasks: configure_kubelet_node_ip.yml
 - import_tasks: install_etcdctl.yml
   tags: update-only
+- import_tasks: configure_tailscale_subnet.yml
 - import_tasks: display_dependencies.yml
   tags: update-only
