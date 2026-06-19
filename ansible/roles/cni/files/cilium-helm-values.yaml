@@ -7,7 +7,7 @@ k8sServiceHost: "10.0.0.20"   # switch IP — Tailscale is invisible to k8s
 k8sServicePort: "6443"
 kubeProxyReplacement: true     # kubeadm skips kube-proxy (skipPhases: addon/kube-proxy)
 
-devices: "eth0,wlan0"          # eth0 for cluster traffic; wlan0 for MetalLB L2 (192.168.86.x) — see DECISION-030
+devices: "eth0"                # switch interface only — wlan0 excluded (see DECISION-030 for attempted wlan0 expansion and why it was reverted)
 routingMode: "tunnel"
 tunnelProtocol: "vxlan"
 
