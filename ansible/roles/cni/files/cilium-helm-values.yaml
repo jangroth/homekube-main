@@ -7,12 +7,21 @@ k8sServiceHost: "10.0.0.20"   # switch IP — Tailscale is invisible to k8s
 k8sServicePort: "6443"
 kubeProxyReplacement: true     # kubeadm skips kube-proxy (skipPhases: addon/kube-proxy)
 
-devices: "eth0"                # switch interface only — wlan0 excluded (see DECISION-030 for attempted wlan0 expansion and why it was reverted)
+devices: "eth0,wlan0"          # wlan0 added for Cilium-native LB-IPAM (DECISION-031); safe now that MetalLB is gone (see DECISION-030 for why wlan0 was previously reverted)
 routingMode: "tunnel"
 tunnelProtocol: "vxlan"
 
 ipam:
   mode: "kubernetes"
+
+l2announcements:
+  enabled: true
+
+# Leader election for L2 announcements is API-chatty (one lease per announcing service).
+# Raise the client-go rate limit so the agent does not get throttled.
+k8sClientRateLimit:
+  qps: 50
+  burst: 100
 
 hubble:
   enabled: true
