@@ -19,9 +19,10 @@
     --version {{ cilium_version }}
     --namespace kube-system
     --values {{ role_path }}/files/cilium-helm-values.yaml
+    --detailed-exitcode
   delegate_to: localhost
   register: helm_diff_check
-  failed_when: false # This is crucial. We expect a non-zero exit code if there's a diff.
+  failed_when: helm_diff_check.rc == 1  # rc=0: no changes, rc=1: error, rc=2: differences
 
 - name: Install/Upgrade Cilium CNI
   kubernetes.core.helm:
@@ -37,7 +38,7 @@
     wait: true
     kubeconfig: "{{ local_kubeconfig }}"
   delegate_to: localhost
-  when: "helm_diff_check.rc != 0"
+  when: "helm_diff_check.rc == 2"
   register: cilium_install_result
 
 - name: Display Helm output
