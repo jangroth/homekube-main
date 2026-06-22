@@ -4,7 +4,7 @@
   register: tailscale_status
   changed_when: false
 
-- name: Advertise MetalLB pool via Tailscale subnet routing
+- name: Advertise LoadBalancer pool (Cilium LB-IPAM) via Tailscale subnet routing
   command: tailscale set --advertise-routes=192.168.86.240/28
   when: >-
     '192.168.86.240/28' not in

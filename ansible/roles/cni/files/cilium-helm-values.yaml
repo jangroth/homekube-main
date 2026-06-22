@@ -7,7 +7,7 @@ k8sServiceHost: "10.0.0.20"   # switch IP — Tailscale is invisible to k8s
 k8sServicePort: "6443"
 kubeProxyReplacement: true     # kubeadm skips kube-proxy (skipPhases: addon/kube-proxy)
 
-devices: "eth0,wlan0"          # wlan0 added for Cilium-native LB-IPAM (DECISION-031); safe now that MetalLB is gone (see DECISION-030 for why wlan0 was previously reverted)
+devices: "eth0,wlan0,tailscale0"  # tailscale0 added (DECISION-032) so Cilium's cil_from_netdev intercepts VIP traffic arriving from Tailscale subnet routing
 routingMode: "tunnel"
 tunnelProtocol: "vxlan"
 

@@ -70,10 +70,10 @@ Running Upstream Kubernetes on Raspberry Pi.
 
 | Network | CIDR | Component |
 |-|-|-|
-| Pod Network | 10.244.0.0/16 | kubeadm / ClusterConfiguration |
+| Pod Network | 10.244.0.0/16 | kubeadm / ClusterConfiguration + Cilium |
 | Service Network | 10.96.0.0/12 | kubeadm / ClusterConfiguration |
 | Cluster DNS | 10.96.0.10 | kubeadm / KubeletConfiguration |
-| Cilium Pod Network | 10.244.0.0/16 | cilium |
+| LB VIP pool | 192.168.86.241–251 | Cilium LB-IPAM (`CiliumLoadBalancerIPPool`) |
 
 ### Kubernetes Cluster Architecture
 
@@ -86,14 +86,17 @@ graph TD
             Scheduler[kube-scheduler]
             Etcd[etcd]
         end
-        
-        subgraph DataPlane [pi1, pi2: Data Plane]
+
+        subgraph DataPlane [pi1, pi2, pi3: Data Plane]
             subgraph NsArgo[ArgoCD]
                 argocd[ArgoCD]
-                argocd_svc[ArgoCD Service</br> NodePort</br> 30000]
+                argocd_svc[ArgoCD Service<br/>NodePort 30000]
                 aoa[Root App]
-                app1[MetalLB]
+                app1[Cilium LB-IPAM]
                 app2[Metrics-Server]
+                app3[cert-manager]
+                app4[sealed-secrets]
+                app5[kubelet-csr-approver]
             end
         end
     end
@@ -102,8 +105,61 @@ graph TD
     argocd -- Deploys --> aoa
     aoa --> app1
     aoa --> app2
-
+    aoa --> app3
+    aoa --> app4
+    aoa --> app5
 ```
+
+### Network Architecture
+
+Three independent network planes serve different purposes:
+
+```mermaid
+graph LR
+    subgraph external[External]
+        darth["darth\n(Tailscale: 100.93.x.x)"]
+        wificlient["Wi-Fi client\n(192.168.86.x)"]
+    end
+
+    subgraph plane_ts["① Tailscale plane (100.x.x.x)"]
+        ts_mesh["WireGuard mesh\nall pis advertise 192.168.86.240/28\nTailscale elects active subnet router"]
+    end
+
+    subgraph plane_wifi["② Home Wi-Fi (192.168.86.0/24)"]
+        vip["LB VIP\n192.168.86.241\nARP → L2 leader MAC"]
+        l2["L2 leader election\nCilium lease per service\npi1 / pi2 / pi3"]
+    end
+
+    subgraph plane_switch["③ k8s switch (10.0.0.0/24)  +  VXLAN overlay"]
+        pi0_eth["pi0 eth0\n10.0.0.20"]
+        pi1_eth["pi1 eth0\n10.0.0.21"]
+        pi2_eth["pi2 eth0\n10.0.0.22"]
+        pi3_eth["pi3 eth0\n10.0.0.23"]
+    end
+
+    subgraph dnat["Cilium eBPF DNAT (TCX)"]
+        dnat_ts["tailscale0 on active subnet router\ncil_from_netdev\nDNAT: VIP → pod"]
+        dnat_wlan["wlan0 on leader\nTCX hook\nDNAT: VIP → pod"]
+    end
+
+    pod["pod backend\n10.244.x.x"]
+
+    darth -->|WireGuard| ts_mesh
+    ts_mesh --> dnat_ts
+    dnat_ts -->|VXLAN| pod
+
+    wificlient -->|ARP| l2
+    l2 -->|GARP: VIP is-at leader MAC| vip
+    wificlient -->|TCP to VIP| dnat_wlan
+    dnat_wlan --> pod
+
+    pod -.->|VXLAN return| pi0_eth
+    pod -.->|local or VXLAN return| pi2_eth
+```
+
+**Tailscale path** (reliable): darth → WireGuard → active subnet router (any pi, `tailscale0`) → Cilium DNAT → pod. Return via VXLAN if pod is on a different node.
+
+**Wi-Fi path** (best-effort): client ARPs for VIP → L2 leader (one of pi1/2/3, elected via Kubernetes lease) responds with its `wlan0` MAC → client sends TCP to leader's `wlan0` → Cilium TCX hook DNATs to pod. Intermittently disrupted by wireless link variability and Cilium BPF reload windows.
 
 ## Setup
 
@@ -116,13 +172,18 @@ Follow the phases in order:
 3. [Phase 3: Ansible Provisioning](./docs/03_ansible.md) — Create homekube user, base packages
 4. [Phase 4: Kubernetes Install](./docs/04_kubernetes.md) — kubeadm + Cilium
 5. [Phase 5: GitOps](./docs/05_gitops.md) — ArgoCD + App-of-Apps
-6. [Apps deployment](https://github.com/jangroth/homekube-apps) — ArgoCD applications (MetalLB, Longhorn, monitoring)
+6. [Apps deployment](https://github.com/jangroth/homekube-apps) — ArgoCD applications (Cilium LB, Longhorn, monitoring)
 
 ### Quick update
 
 ```shell
-ansible-playbook 01-update-control-node.yml --tags update-only
-ansible-playbook 03-setup-k8s-nodes.yml --tags update-only
+# Via Task (preferred — runs from homekube-main/)
+task update-all
+
+# Or directly
+cd ansible
+uv run ansible-playbook 20-configure-darth.yml --tags update-only
+uv run ansible-playbook 22-k8s-nodes.yml --tags update-only
 ```
 
 ## References / Inspiration

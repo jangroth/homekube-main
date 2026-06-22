@@ -54,7 +54,7 @@
     path: /etc/motd
     state: absent
 
-- name: Configure motd
+- name: Configure motd 1/2
   copy:
     src: system/motd-hostname
     dest: /etc/update-motd.d/20-hostname
@@ -62,7 +62,7 @@
     group: root
     mode: "0755"
 
-- name: Configure motd
+- name: Configure motd 2/2
   copy:
     src: system/motd-updates
     dest: /etc/update-motd.d/20-updates
