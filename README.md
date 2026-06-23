@@ -90,7 +90,7 @@ graph TD
         subgraph DataPlane [pi1, pi2, pi3: Data Plane]
             subgraph NsArgo[ArgoCD]
                 argocd[ArgoCD]
-                argocd_svc[ArgoCD Service<br/>NodePort 30000]
+                argocd_svc[ArgoCD Service<br/>192.168.86.241:80]
                 aoa[Root App]
                 app1[Cilium LB-IPAM]
                 app2[Metrics-Server]
