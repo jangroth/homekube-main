@@ -50,19 +50,28 @@ certificateValidityPeriod: 8760h0m0s
 certificatesDir: /etc/kubernetes/pki
 clusterName: homekube # custom
 controlPlaneEndpoint: "10.0.0.20:6443" # custom
-controllerManager: {}
+controllerManager:
+  extraArgs:
+    - name: bind-address
+      value: "0.0.0.0"
 dns: {}
 encryptionAlgorithm: RSA-2048
 etcd:
   local:
     dataDir: /var/lib/etcd
+    extraArgs:
+      - name: listen-metrics-urls
+        value: "http://0.0.0.0:2381"
 imageRepository: registry.k8s.io
 kubernetesVersion: 1.36.1 # custom
 networking:
   dnsDomain: cluster.local
   podSubnet: "10.244.0.0/16" # custom
   serviceSubnet: 10.96.0.0/12
-scheduler: {}
+scheduler:
+  extraArgs:
+    - name: bind-address
+      value: "0.0.0.0"
 
 ---
 # https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/#kubelet-config-k8s-io-v1beta1-KubeletConfiguration
