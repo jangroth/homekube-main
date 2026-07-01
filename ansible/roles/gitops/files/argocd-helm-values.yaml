@@ -23,5 +23,3 @@ server:
   replicas: 1
   metrics:
     enabled: true
-  extraArgs:
-    - --oidc-issuer-override=http://dex.dex.svc.cluster.local:5556/dex

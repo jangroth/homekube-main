@@ -29,3 +29,22 @@
     group: root
     mode: "0644"
   notify: reload sysctl
+
+- name: Ensure journald drop-in directory exists
+  ansible.builtin.file:
+    path: /etc/systemd/journald.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Enable persistent systemd journal
+  ansible.builtin.copy:
+    dest: /etc/systemd/journald.conf.d/persistent.conf
+    content: |
+      [Journal]
+      Storage=persistent
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart journald

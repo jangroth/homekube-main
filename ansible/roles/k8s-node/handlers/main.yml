@@ -2,6 +2,11 @@
 - name: reload sysctl
   command: sysctl --system
 
+- name: restart journald
+  ansible.builtin.systemd:
+    name: systemd-journald
+    state: restarted
+
 - name: restart kubelet
   ansible.builtin.systemd:
     name: kubelet
