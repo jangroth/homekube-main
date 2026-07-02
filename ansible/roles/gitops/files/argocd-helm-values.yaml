@@ -3,9 +3,7 @@
 
 applicationSet:
   replicaCount: 1
-configs:
-  params:
-    server.insecure: true
+configs: {}
 controller:
   replicas: 1
   metrics:
