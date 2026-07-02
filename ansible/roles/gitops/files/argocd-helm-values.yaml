@@ -7,6 +7,9 @@ configs:
   cm:
     create: true
     url: "https://192.168.86.241"
+    # Local account for the Homepage dashboard widget (spec 007).
+    # apiKey only, no login — token keeps working when local UI login is disabled.
+    accounts.homepage: apiKey
     oidc.config: |
       name: Google (via Dex)
       issuer: https://pi0.taild13083.ts.net/dex
@@ -36,6 +39,7 @@ configs:
     scopes: '[email, groups]'
     policy.csv: |
       g, jan.groth.de@gmail.com, role:admin
+      g, homepage, role:readonly
 controller:
   replicas: 1
   metrics:

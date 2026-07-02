@@ -71,6 +71,12 @@
     state: latest
   delegate_to: localhost
 
+- name: Install crane CLI
+  community.general.homebrew:
+    name: crane
+    state: latest
+  delegate_to: localhost
+
 - name: Check if Longhorn CLI is already installed with correct version
   ansible.builtin.command: longhornctl version
   delegate_to: localhost
