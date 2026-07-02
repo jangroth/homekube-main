@@ -3,7 +3,11 @@
 
 applicationSet:
   replicaCount: 1
-configs: {}
+configs:
+  cm:
+    create: false
+  rbac:
+    create: false
 controller:
   replicas: 1
   metrics:

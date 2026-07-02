@@ -1,6 +1,6 @@
 ---
 - name: Check if Kubernetes cluster is ready
-  ansible.builtin.shell: kubectl get nodes {{ ansible_hostname }} --no-headers
+  ansible.builtin.shell: kubectl get nodes {{ ansible_facts['hostname'] }} --no-headers
   delegate_to: localhost
   register: k8s_node_status
   failed_when: k8s_node_status.rc != 0
@@ -64,7 +64,7 @@
   changed_when: false
 
 - name: Confirm node is ready with CNI
-  ansible.builtin.shell: kubectl get nodes {{ ansible_hostname }} --no-headers | awk '{print $2}'
+  ansible.builtin.shell: kubectl get nodes {{ ansible_facts['hostname'] }} --no-headers | awk '{print $2}'
   delegate_to: localhost
   register: node_ready_status
   failed_when: node_ready_status.stdout != "Ready"
