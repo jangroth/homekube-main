@@ -3,3 +3,4 @@
 - import_tasks: update_ssh_config.yml
 - import_tasks: install_packages.yml
   tags: update-only
+- import_tasks: trust_homekube_ca.yml

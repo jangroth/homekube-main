@@ -1,0 +1,24 @@
+---
+# Trust the homekube-CA (cert-manager ClusterIssuer) on darth so browsers
+# accept the ArgoCD / Grafana LB VIP certs. Login keychain: no sudo needed;
+# Safari/Chrome honor it. Firefox needs security.enterprise_roots.enabled.
+# Same PEM as in gitops/files/argocd-helm-values.yaml and the homepage app's
+# ca-configmap.yaml.
+# Note: on darth the CA was originally imported by hand into the System
+# keychain (found by the check below, so this no-ops there); this task
+# codifies the trust for a rebuilt control node.
+
+- name: Check if homekube-CA is already in the login keychain
+  ansible.builtin.command: security find-certificate -c homekube-ca
+  delegate_to: localhost
+  register: homekube_ca_check
+  failed_when: false
+  changed_when: false
+
+- name: Trust homekube-CA in login keychain (may prompt for login password)
+  ansible.builtin.command: >
+    security add-trusted-cert -r trustRoot
+    -k {{ lookup('env', 'HOME') }}/Library/Keychains/login.keychain-db
+    {{ role_path }}/files/homekube-ca.crt
+  delegate_to: localhost
+  when: homekube_ca_check.rc != 0
