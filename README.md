@@ -2,49 +2,13 @@
 
 Running Upstream Kubernetes on Raspberry Pi.
 
----
-
-![Homekube](./docs/images/homekube2.png)
-
----
-
-<div style="display: flex; justify-content: space-around;">
-  <img src="./docs/images/logo-kubernetes.svg.png" alt="kubernetes" style="height: 50px;">
-  <img src="./docs/images/logo-cilium.png" alt="cilium" style="height: 50px;">
-  <img src="./docs/images/logo-longhorn.png" alt="longhorn" style="height: 50px;">
-</div>
-
----
-
-<div style="display: flex; justify-content: space-around;">
-  <img src="./docs/images/logo-prometheus.png" alt="prometheus" style="height: 50px;">
-  <img src="./docs/images/logo-grafana.png" alt="grafana" style="height: 50px;">
-  <img src="./docs/images/logo-loki.png" alt="loki" style="height: 50px;">
-</div>
-
----
-<div style="display: flex; justify-content: space-around;">
-  <img src="./docs/images/logo-ansible.png" alt="ansible" style="height: 50px;">
-  <img src="./docs/images/logo-argocd.png" alt="argocd" style="height: 50px;">
-</div>
-
----
-
-![Homekube](./docs/images/k9s.png)
-
----
+Cluster topology, network architecture, and component/version tables live in the top-level [`homekube` README](../README.md) — this repo only covers what's specific to provisioning it.
 
 <!-- TOC -->
-* [Overview](#overview)
 * [Setup](#setup)
-* [References / Inspiration](#references--inspiration)
 <!-- /TOC -->
 
 ---
-
-## Overview
-
-Cluster topology, network architecture, and component/version tables now live in the top-level [`homekube` README](../README.md) — this repo only covers what's specific to provisioning it.
 
 ## Setup
 
@@ -70,9 +34,3 @@ cd ansible
 uv run ansible-playbook 20-configure-darth.yml --tags update-only
 uv run ansible-playbook 22-k8s-nodes.yml --tags update-only
 ```
-
-## References / Inspiration
-
-* [Kubernetes the hard way](https://github.com/kelseyhightower/kubernetes-the-hard-way/tree/master) - Kelsey Hightower
-* [Pi Kubernetes Cluster](https://picluster.ricsanfre.com/docs/home/) - Ricardo Sanchez
-* [k8s-gitops](https://github.com/xunholy/k8s-gitops) - Michael Fornaro
