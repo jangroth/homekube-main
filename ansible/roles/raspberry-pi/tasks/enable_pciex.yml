@@ -1,7 +1,7 @@
 - name: Ensure /boot/firmware/config.txt exists
   file:
     path: /boot/firmware/config.txt
-    state: touch
+    state: file
     mode: "0644"
 
 - name: Add dtparam=pciex1_gen=3 to /boot/firmware/config.txt under [all]
