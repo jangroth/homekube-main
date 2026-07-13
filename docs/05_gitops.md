@@ -8,14 +8,13 @@ Run from `homekube-main/ansible/` on darth.
 
 ## Overview
 
-The cluster uses ArgoCD's **App-of-Apps** pattern: a single root Application (`root-app`) in the `argocd` namespace watches the `jangroth/homekube-apps` Git repository. Every subdirectory under `applications/` is itself an ArgoCD Application — ArgoCD discovers and deploys them automatically. Changes pushed to `homekube-apps` are synced continuously; no manual `kubectl apply` is needed after initial bootstrap.
+The cluster uses ArgoCD's **App-of-Apps** pattern: a single root Application (`root-app`) in the `argocd` namespace watches the `jangroth/homekube-apps` Git repository. `applications/kustomization.yaml` explicitly lists every child Application manifest as a Kustomize resource — root-app builds that file, and ArgoCD deploys whatever it resolves to. Adding a new app means adding it to `kustomization.yaml`, not just dropping a file in a subdirectory. Changes pushed to `homekube-apps` are synced continuously; no manual `kubectl apply` is needed after initial bootstrap.
 
 ```
 homekube-main (Ansible bootstrap)
   └── root-app (ArgoCD Application)
-        └── homekube-apps/applications/
-              ├── wave-00-init/   (sync-wave: "-1")
-              └── wave-01-apps/   (sync-wave: "1")
+        └── homekube-apps/applications/  (kustomization.yaml)
+              └── wave-NN-<name>/   (argocd.argoproj.io/sync-wave: "<N>")
 ```
 
 ---
@@ -45,27 +44,9 @@ After the playbook completes, ArgoCD picks up `homekube-apps/applications/` and 
 
 ## App-of-Apps Structure
 
-### Wave 00 — Init (`sync-wave: "-1"`)
+Applications are grouped into `wave-NN-<name>/` directories under `homekube-apps/applications/`, each carrying an `argocd.argoproj.io/sync-wave` annotation. Lower-numbered waves deploy first (cluster-level infra: storage, networking, cert management); higher waves deploy application and observability workloads that depend on earlier waves being healthy.
 
-Deploys infrastructure dependencies that must be ready before application workloads:
-
-| Application | Namespace | Purpose |
-|-------------|-----------|---------|
-| [argocd-config](https://github.com/jangroth/homekube-apps/blob/main/applications/wave-00-init/argocd-config.yaml) | argocd | ArgoCD RBAC / ConfigMap overrides |
-| [longhorn](https://github.com/jangroth/homekube-apps/blob/main/applications/wave-00-init/longhorn.yaml) | longhorn-system | Distributed block storage |
-| [metrics-server](https://github.com/jangroth/homekube-apps/blob/main/applications/wave-00-init/metrics-server.yaml) | kube-system | `kubectl top` / HPA metrics |
-
-### Wave 01 — Apps (`sync-wave: "1"`)
-
-Deploys workloads after wave-00 storage and metrics are ready:
-
-| Application | Namespace | Purpose |
-|-------------|-----------|---------|
-| kube-prometheus | observability | Prometheus + Grafana + Alertmanager (kube-prometheus-stack) |
-| loki | observability | Log aggregation |
-| alloy | observability | Metrics and log collector (Grafana Alloy) |
-
-> These Application files live under `homekube-apps/applications/wave-01-apps/`.
+The current set of waves and applications lives entirely in [`homekube-apps/applications/`](https://github.com/jangroth/homekube-apps/tree/main/applications) — not duplicated here, since it changes independently of this doc.
 
 ---
 
@@ -160,13 +141,3 @@ kubectl -n argocd get application root-app -o jsonpath='{.spec.source}'
 
 Expected output: `repoURL: https://github.com/jangroth/homekube-apps.git`, `path: applications`.
 
----
-
-## Status
-
-| Step | State |
-|------|-------|
-| ArgoCD installed (Helm chart 9.5.15) | done |
-| root-app created and syncing | done |
-| wave-00-init (longhorn, metrics-server, argocd-config) | done |
-| wave-01-apps (observability stack) | done |
