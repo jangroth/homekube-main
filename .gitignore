@@ -1,4 +1,5 @@
 .venv/
+.ansible/
 downloads/*
 **/.terraform/*
 **/terraform.tfstate

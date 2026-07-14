@@ -1,0 +1,14 @@
+---
+profile: basic
+
+warn_list:
+  - experimental
+  - yaml[line-length]
+
+# Intentional deviations from defaults:
+skip_list:
+  - role-name  # existing roles use hyphenated names (k8s-control-plane, control-node, etc.)
+
+exclude_paths:
+  - .git/
+  - .venv/
