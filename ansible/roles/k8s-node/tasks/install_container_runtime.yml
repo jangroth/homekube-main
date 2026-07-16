@@ -38,7 +38,8 @@
     var: installed_containerd_version
 
 # Only proceed with containerd installation/update if version differs
-- when: installed_containerd_version != containerd_version
+- name: Install or update containerd
+  when: installed_containerd_version != containerd_version
 
   block:
     - name: Check if containerd already downloaded

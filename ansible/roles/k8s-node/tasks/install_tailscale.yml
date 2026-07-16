@@ -1,15 +1,15 @@
 ---
 - name: Add Tailscale's package signing key
-  shell: |
-    curl -fsSL https://pkgs.tailscale.com/stable/debian/bookworm.noarmor.gpg | tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
-  args:
-    creates: /usr/share/keyrings/tailscale-archive-keyring.gpg
+  ansible.builtin.get_url:
+    url: https://pkgs.tailscale.com/stable/debian/bookworm.noarmor.gpg
+    dest: /usr/share/keyrings/tailscale-archive-keyring.gpg
+    mode: "0644"
 
 - name: Add Tailscale repository
-  shell: |
-    curl -fsSL https://pkgs.tailscale.com/stable/debian/bookworm.tailscale-keyring.list | tee /etc/apt/sources.list.d/tailscale.list
-  args:
-    creates: /etc/apt/sources.list.d/tailscale.list
+  ansible.builtin.get_url:
+    url: https://pkgs.tailscale.com/stable/debian/bookworm.tailscale-keyring.list
+    dest: /etc/apt/sources.list.d/tailscale.list
+    mode: "0644"
 
 - name: Update apt cache
   apt:

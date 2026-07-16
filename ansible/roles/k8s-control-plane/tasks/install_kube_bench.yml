@@ -20,7 +20,8 @@
     var: installed_kube_bench_version
 
 # Only proceed with kube-bench installation/update if version differs
-- when: installed_kube_bench_version != kube_bench_version
+- name: Install or update kube-bench
+  when: installed_kube_bench_version != kube_bench_version
 
   block:
     - name: Check if kube-bench already downloaded

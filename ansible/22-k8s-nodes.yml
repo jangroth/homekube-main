@@ -1,5 +1,6 @@
 ---
-- hosts: [all_nodes]
+- name: Configure k8s prerequisites on all nodes
+  hosts: [all_nodes]
   become: true
   roles:
     - role: k8s-node

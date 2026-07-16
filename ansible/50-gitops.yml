@@ -1,5 +1,6 @@
 ---
-- hosts: [control_plane]
+- name: Install GitOps (ArgoCD)
+  hosts: [control_plane]
   become: false
   roles:
     - role: gitops
