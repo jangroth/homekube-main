@@ -1,3 +1,4 @@
+---
 - name: Ensure /boot/firmware/config.txt exists
   file:
     path: /boot/firmware/config.txt
@@ -11,6 +12,6 @@
       dtparam=pciex1
       dtparam=pciex1_gen=3
     marker: "# {mark} ANSIBLE MANAGED PCIEX1_GEN"
-    insertafter: '^\[all\]$'
+    insertafter: "^\\[all\\]$"
     state: present
   register: pciex_config

@@ -20,7 +20,9 @@
     var: installed_kube_bench_version
 
 # Only proceed with kube-bench installation/update if version differs
-- block:
+- when: installed_kube_bench_version != kube_bench_version
+
+  block:
     - name: Check if kube-bench already downloaded
       stat:
         path: "{{ playbook_dir }}/../downloads/kube-bench_{{ kube_bench_version }}_{{ system_arch_v2 }}.deb"
@@ -55,8 +57,6 @@
       file:
         path: "/tmp/kube-bench_{{ kube_bench_version }}_{{ system_arch_v2 }}.deb"
         state: absent
-
-  when: installed_kube_bench_version != kube_bench_version
 
 - name: Verify kube-bench installation
   command: kube-bench version

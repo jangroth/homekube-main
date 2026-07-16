@@ -1,7 +1,7 @@
 ---
 - name: Update Homebrew package index
   community.general.homebrew:
-    update_homebrew: yes
+    update_homebrew: true
   delegate_to: localhost
 
 # basics
@@ -98,7 +98,7 @@
     src: "{{ playbook_dir }}/../downloads/longhornctl-darwin-arm64"
     dest: /opt/homebrew/bin/longhornctl
     mode: "0755"
-    remote_src: yes
+    remote_src: true
   delegate_to: localhost
   register: longhorn_install
   when: longhorn_version_check.rc != 0 or longhorn_version not in longhorn_version_check.stdout

@@ -1,10 +1,11 @@
+---
 - name: Update apt packages
   apt:
-    update_cache: yes
+    update_cache: true
     upgrade: dist
     cache_valid_time: 3600
-    autoclean: yes
-    autoremove: yes
+    autoclean: true
+    autoremove: true
 
 - name: Check if a reboot is needed
   register: reboot_required_file

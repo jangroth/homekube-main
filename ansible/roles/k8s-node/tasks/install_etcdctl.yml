@@ -23,7 +23,9 @@
     var: installed_etcdctl_version
 
 # Only proceed with etcdctl installation/update if version differs
-- block:
+- when: installed_etcdctl_version != etcdctl_version
+
+  block:
     - name: Check if etcdctl already downloaded
       stat:
         path: "{{ playbook_dir }}/../downloads/etcdctl-v{{ etcdctl_version }}.tar.gz"
@@ -58,7 +60,7 @@
       unarchive:
         src: "/tmp/etcdctl-v{{ etcdctl_version }}.tar.gz"
         dest: "/tmp/etcd-extract"
-        remote_src: yes
+        remote_src: true
 
     - name: Install etcdctl binary
       copy:
@@ -67,7 +69,7 @@
         mode: "0755"
         owner: root
         group: root
-        remote_src: yes
+        remote_src: true
 
     - name: Install etcd binary (optional)
       copy:
@@ -76,7 +78,7 @@
         mode: "0755"
         owner: root
         group: root
-        remote_src: yes
+        remote_src: true
 
     - name: Clean up temporary files
       file:
@@ -85,8 +87,6 @@
       loop:
         - "/tmp/etcdctl-v{{ etcdctl_version }}.tar.gz"
         - "/tmp/etcd-extract"
-
-  when: installed_etcdctl_version != etcdctl_version
 
 - name: Verify etcdctl installation
   command: /usr/local/bin/etcdctl version

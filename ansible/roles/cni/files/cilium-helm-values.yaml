@@ -3,11 +3,11 @@
 
 upgradeCompatibility: "1.17"
 
-k8sServiceHost: "10.0.0.20"   # switch IP — Tailscale is invisible to k8s
+k8sServiceHost: "10.0.0.20" # switch IP — Tailscale is invisible to k8s
 k8sServicePort: "6443"
-kubeProxyReplacement: true     # kubeadm skips kube-proxy (skipPhases: addon/kube-proxy)
+kubeProxyReplacement: true # kubeadm skips kube-proxy (skipPhases: addon/kube-proxy)
 
-devices: "eth0,wlan0,tailscale0"  # tailscale0 added (DECISION-032) so Cilium's cil_from_netdev intercepts VIP traffic arriving from Tailscale subnet routing
+devices: "eth0,wlan0,tailscale0" # tailscale0 added (DECISION-032) so Cilium's cil_from_netdev intercepts VIP traffic arriving from Tailscale subnet routing
 routingMode: "tunnel"
 tunnelProtocol: "vxlan"
 

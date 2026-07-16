@@ -14,7 +14,7 @@
 - name: Enable and start iscsid service
   systemd:
     name: iscsid
-    enabled: yes
+    enabled: true
     state: started
 
 - name: Load iscsi_tcp kernel module

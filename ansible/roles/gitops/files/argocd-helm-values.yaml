@@ -36,7 +36,7 @@ configs:
   rbac:
     create: true
     policy.default: ""
-    scopes: '[email, groups]'
+    scopes: "[email, groups]"
     policy.csv: |
       g, jan.groth.de@gmail.com, role:admin
       g, homepage, role:readonly

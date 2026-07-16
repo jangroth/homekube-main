@@ -69,3 +69,7 @@ tasks:
     desc: "Update Kubernetes nodes (system packages, storage)"
     dir: "{{.ANSIBLE_DIR}}"
     cmd: uv run ansible-playbook 22-k8s-nodes.yml --tags update-only
+
+  lint:
+    desc: "Lint Ansible playbooks and roles with ansible-lint"
+    cmd: uv run ansible-lint {{.ANSIBLE_DIR}}

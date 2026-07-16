@@ -3,7 +3,7 @@
   copy:
     src: kubeadm-config.yaml
     dest: "/home/{{ ssh_username }}/kubeadm-config.yaml"
-    backup: no
+    backup: false
     owner: "{{ ssh_username }}"
     group: "{{ ssh_username }}"
     mode: "0644"

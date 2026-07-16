@@ -25,9 +25,9 @@
   apt:
     pkg: dphys-swapfile
     state: absent
-    purge: yes
-    autoclean: yes
-    autoremove: yes
+    purge: true
+    autoclean: true
+    autoremove: true
   when: "'dphys-swapfile' in ansible_facts.packages"
 
 - name: Remove stale dphys-swapfile swap file
@@ -47,7 +47,7 @@
 - name: Set swapfile permissions
   file:
     path: /var/swap.img
-    mode: '0600'
+    mode: "0600"
     owner: root
     group: root
 
