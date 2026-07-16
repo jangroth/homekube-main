@@ -2,7 +2,7 @@
 #
 # basic CNI
 #
-- name: runc, cni-plugins
+- name: Runc, cni-plugins
   apt:
     pkg:
       - runc
@@ -38,7 +38,9 @@
     var: installed_containerd_version
 
 # Only proceed with containerd installation/update if version differs
-- block:
+- when: installed_containerd_version != containerd_version
+
+  block:
     - name: Check if containerd already downloaded
       stat:
         path: "{{ playbook_dir }}/../downloads/containerd-{{ containerd_version }}.tar.gz"
@@ -67,9 +69,7 @@
       unarchive:
         src: "/tmp/containerd-{{ containerd_version }}.tar.gz"
         dest: /usr/local
-        remote_src: yes
-
-  when: installed_containerd_version != containerd_version
+        remote_src: true
 
 - name: Create containerd directory
   file:
@@ -81,7 +81,7 @@
   copy:
     src: containerd/config.toml
     dest: /etc/containerd/config.toml
-    backup: no
+    backup: false
     owner: root
     group: root
     mode: "0644"
@@ -90,14 +90,14 @@
   copy:
     src: containerd/containerd.service
     dest: /etc/systemd/system/containerd.service
-    backup: no
+    backup: false
     owner: root
     group: root
     mode: "0644"
 
 - name: Reload systemd
   systemd:
-    daemon_reload: yes
+    daemon_reload: true
 
 - name: Restart containerd if binary was updated
   systemd:
@@ -108,5 +108,5 @@
 - name: Enable and start containerd
   systemd:
     name: containerd
-    enabled: yes
+    enabled: true
     state: started

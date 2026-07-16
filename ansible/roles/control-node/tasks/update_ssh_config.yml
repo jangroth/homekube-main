@@ -2,7 +2,7 @@
 - name: Add Pi hosts to SSH config file
   blockinfile:
     path: "~/.ssh/config"
-    create: yes
+    create: true
     mode: "0600"
     block: |
       {% for host in groups['all_nodes'] %}

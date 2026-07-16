@@ -17,7 +17,8 @@
 
     - name: Print version information
       debug:
-        msg: "{{ item }} - {{ version_output.results[k8s_components.index(item)].stdout_lines[1] }} - {{ version_output.results[k8s_components.index(item)].stdout_lines[2] }}"
+        msg: "{{ item }} - {{ version_output.results[k8s_components.index(item)].stdout_lines[1] }} - {{ version_output.results[k8s_components.index(item)].stdout_lines[2]
+          }}"
       loop: "{{ k8s_components }}"
 
 - name: Get containerd version
@@ -29,7 +30,7 @@
 - name: Get latest containerd release
   uri:
     url: "https://api.github.com/repos/containerd/containerd/releases/latest"
-    return_content: yes
+    return_content: true
     method: GET
   register: latest_release
 

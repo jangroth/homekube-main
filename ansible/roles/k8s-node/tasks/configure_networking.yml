@@ -11,7 +11,7 @@
     type: ethernet
     ip4: "{{ ip_addresses_internal[inventory_hostname] }}"
     method4: manual
-    autoconnect: yes
+    autoconnect: true
 
 - name: Activate connection (if not already active)
   nmcli:
@@ -22,7 +22,7 @@
   nmcli:
     conn_name: "Wired connection 1"
     state: present
-    autoconnect: yes
+    autoconnect: true
 
 - name: Restart networking
   service:

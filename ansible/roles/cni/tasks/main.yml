@@ -22,7 +22,7 @@
     --detailed-exitcode
   delegate_to: localhost
   register: helm_diff_check
-  failed_when: helm_diff_check.rc == 1  # rc=0: no changes, rc=1: error, rc=2: differences
+  failed_when: helm_diff_check.rc == 1 # rc=0: no changes, rc=1: error, rc=2: differences
 
 - name: Install/Upgrade Cilium CNI
   kubernetes.core.helm:

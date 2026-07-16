@@ -205,19 +205,19 @@
 - name: Patch fstab on clone — boot PARTUUID
   replace:
     path: /mnt/clone/etc/fstab
-    regexp: 'PARTUUID=[A-Fa-f0-9-]+-01'
+    regexp: "PARTUUID=[A-Fa-f0-9-]+-01"
     replace: "PARTUUID={{ nvme_boot_partuuid.stdout }}"
 
 - name: Patch fstab on clone — root PARTUUID
   replace:
     path: /mnt/clone/etc/fstab
-    regexp: 'PARTUUID=[A-Fa-f0-9-]+-02'
+    regexp: "PARTUUID=[A-Fa-f0-9-]+-02"
     replace: "PARTUUID={{ nvme_root_partuuid.stdout }}"
 
 - name: Patch cmdline.txt on clone — root PARTUUID
   replace:
     path: /mnt/clone/boot/firmware/cmdline.txt
-    regexp: 'root=PARTUUID=\S+'
+    regexp: "root=PARTUUID=\\S+"
     replace: "root=PARTUUID={{ nvme_root_partuuid.stdout }}"
 
 # ---------- Verify before flipping boot order ----------
@@ -231,7 +231,7 @@
 - name: Add /storage fstab entry on clone
   lineinfile:
     path: /mnt/clone/etc/fstab
-    line: 'LABEL=storage  /storage  ext4  defaults  0  2'
+    line: "LABEL=storage  /storage  ext4  defaults  0  2"
     state: present
 
 - name: Verify clone fstab references NVMe boot PARTUUID

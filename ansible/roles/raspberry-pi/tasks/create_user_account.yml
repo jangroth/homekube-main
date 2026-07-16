@@ -18,15 +18,15 @@
   user:
     name: "{{ ssh_username }}"
     shell: /bin/bash
-    create_home: yes
+    create_home: true
     state: present
-    password_lock: yes
+    password_lock: true
 
 - name: Add user to sudo group
   user:
     name: "{{ ssh_username }}"
     groups: sudo
-    append: yes
+    append: true
 
 - name: Ensure user .ssh directory exists
   file:
@@ -62,14 +62,15 @@
   when: not ssh_key_file.stat.exists
 
 - name: Update hostname in public key on the host
-  shell: sed -i "s/$(cat /home/{{ ssh_username }}/.ssh/id_ed25519.pub | cut -d' ' -f3)$/{{ inventory_hostname }}@homekube/" /home/{{ ssh_username }}/.ssh/id_ed25519.pub
+  shell: sed -i "s/$(cat /home/{{ ssh_username }}/.ssh/id_ed25519.pub | cut -d' ' -f3)$/{{ inventory_hostname }}@homekube/" /home/{{ ssh_username
+    }}/.ssh/id_ed25519.pub
   when: not ssh_key_file.stat.exists
 
 - name: Copy node's public SSH key to control node
   fetch:
     src: "/home/{{ ssh_username }}/.ssh/id_ed25519.pub"
     dest: "{{ role_path }}/files/pub_keys/{{ inventory_hostname }}.pub"
-    flat: yes
+    flat: true
 
 - name: Add all public keys to authorized_keys
   authorized_key:
@@ -85,7 +86,7 @@
     line: "{{ ssh_username }} ALL=(ALL) NOPASSWD: ALL"
     state: present
     mode: "0440"
-    create: yes
+    create: true
     validate: "visudo -cf %s"
 
 - name: Disable root login
@@ -99,4 +100,4 @@
 - name: Lock boot user
   ansible.builtin.user:
     name: boot
-    password_lock: yes
+    password_lock: true
