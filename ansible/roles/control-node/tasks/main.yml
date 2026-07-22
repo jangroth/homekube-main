@@ -1,6 +1,10 @@
 ---
-- import_tasks: update_known-hosts.yml
-- import_tasks: update_ssh_config.yml
-- import_tasks: install_packages.yml
+- name: Update known hosts
+  import_tasks: update_known-hosts.yml
+- name: Update SSH config
+  import_tasks: update_ssh_config.yml
+- name: Install packages
+  import_tasks: install_packages.yml
   tags: update-only
-- import_tasks: trust_homekube_ca.yml
+- name: Trust homekube CA
+  import_tasks: trust_homekube_ca.yml

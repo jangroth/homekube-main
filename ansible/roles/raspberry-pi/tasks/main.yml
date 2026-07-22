@@ -1,18 +1,25 @@
 ---
-- import_tasks: create_user_account.yml
+- name: Create user account
+  import_tasks: create_user_account.yml
   tags: init
   when: "'init' in ansible_run_tags"
-- import_tasks: update_system.yml
+- name: Update system
+  import_tasks: update_system.yml
   tags: init
   when: "'init' in ansible_run_tags"
-- import_tasks: disable_password_auth.yml
+- name: Disable password auth
+  import_tasks: disable_password_auth.yml
   tags: init
   when: "'init' in ansible_run_tags"
-- import_tasks: enable_pciex.yml
+- name: Enable PCIe
+  import_tasks: enable_pciex.yml
   tags: nvme_pre
   when: "'nvme_pre' in ansible_run_tags"
-- import_tasks: copy_mmc_to_nvme.yml
+- name: Copy MMC to NVMe
+  import_tasks: copy_mmc_to_nvme.yml
   tags: nvme_post
   when: "'nvme_post' in ansible_run_tags"
-- import_tasks: sync_authorized_keys.yml
-- import_tasks: verify_sshd_config.yml
+- name: Sync authorized keys
+  import_tasks: sync_authorized_keys.yml
+- name: Verify sshd config
+  import_tasks: verify_sshd_config.yml

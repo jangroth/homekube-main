@@ -1,25 +1,41 @@
 ---
-- import_tasks: update_system.yml
+- name: Update system
+  import_tasks: update_system.yml
   tags: update-only
-- import_tasks: configure_kernel.yml
+- name: Configure kernel
+  import_tasks: configure_kernel.yml
   tags: update-only
-- import_tasks: configure_networking.yml
-- import_tasks: configure_etc_hosts.yml
-- import_tasks: reload_networking_modules.yml
+- name: Configure networking
+  import_tasks: configure_networking.yml
+- name: Configure /etc/hosts
+  import_tasks: configure_etc_hosts.yml
+- name: Reload networking modules
+  import_tasks: reload_networking_modules.yml
   tags: update-only
-- import_tasks: configure_cgroups.yml
-- import_tasks: configure_storage.yml
+- name: Configure cgroups
+  import_tasks: configure_cgroups.yml
+- name: Configure storage
+  import_tasks: configure_storage.yml
   tags: update-only
-- import_tasks: install_container_runtime.yml
-- import_tasks: unhold_kube_packages.yml
+- name: Install container runtime
+  import_tasks: install_container_runtime.yml
+- name: Unhold kube packages
+  import_tasks: unhold_kube_packages.yml
   tags: unhold-kube
   when: "'unhold-kube' in ansible_run_tags"
-- import_tasks: install_kube_packages.yml
-- import_tasks: configure_swap.yml
-- import_tasks: configure_kubernetes_dns.yml
-- import_tasks: configure_kubelet_node_ip.yml
-- import_tasks: install_etcdctl.yml
+- name: Install kube packages
+  import_tasks: install_kube_packages.yml
+- name: Configure swap
+  import_tasks: configure_swap.yml
+- name: Configure Kubernetes DNS
+  import_tasks: configure_kubernetes_dns.yml
+- name: Configure kubelet node IP
+  import_tasks: configure_kubelet_node_ip.yml
+- name: Install etcdctl
+  import_tasks: install_etcdctl.yml
   tags: update-only
-- import_tasks: configure_tailscale_subnet.yml
-- import_tasks: display_dependencies.yml
+- name: Configure Tailscale subnet
+  import_tasks: configure_tailscale_subnet.yml
+- name: Display dependencies
+  import_tasks: display_dependencies.yml
   tags: update-only

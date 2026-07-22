@@ -1,4 +1,6 @@
 ---
-- import_tasks: query_join_credentials.yml
+- name: Query join credentials
+  import_tasks: query_join_credentials.yml
 
-- import_tasks: join_cluster.yml
+- name: Join cluster
+  import_tasks: join_cluster.yml

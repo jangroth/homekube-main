@@ -1,9 +1,13 @@
 ---
-- import_tasks: copy_config_files.yml
+- name: Copy config files
+  import_tasks: copy_config_files.yml
   tags: update-only
 
-- import_tasks: init_control_plane.yml
+- name: Initialize control plane
+  import_tasks: init_control_plane.yml
 
-- import_tasks: setup_kubeconfig.yml
+- name: Set up kubeconfig
+  import_tasks: setup_kubeconfig.yml
 
-- import_tasks: install_kube_bench.yml
+- name: Install kube-bench
+  import_tasks: install_kube_bench.yml

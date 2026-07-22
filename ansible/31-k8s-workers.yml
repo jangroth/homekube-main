@@ -1,5 +1,6 @@
 ---
-- hosts: data_plane
+- name: Join k8s worker nodes
+  hosts: data_plane
   become: true
   roles:
     - role: k8s-worker

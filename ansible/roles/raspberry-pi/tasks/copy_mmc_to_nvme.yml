@@ -181,12 +181,29 @@
 # ---------- Rsync ----------
 
 - name: Rsync / → /mnt/clone (long-running)
-  command: rsync -axH --delete --exclude=/mnt / /mnt/clone/
+  ansible.posix.synchronize:
+    src: /
+    dest: /mnt/clone/
+    archive: true
+    delete: true
+    rsync_opts:
+      - "--one-file-system"
+      - "--hard-links"
+      - "--exclude=/mnt"
+  delegate_to: "{{ inventory_hostname }}"
   register: rsync_root
   changed_when: rsync_root.stdout_lines | length > 0
 
 - name: Rsync /boot/firmware → /mnt/clone/boot/firmware
-  command: rsync -axH --delete /boot/firmware/ /mnt/clone/boot/firmware/
+  ansible.posix.synchronize:
+    src: /boot/firmware/
+    dest: /mnt/clone/boot/firmware/
+    archive: true
+    delete: true
+    rsync_opts:
+      - "--one-file-system"
+      - "--hard-links"
+  delegate_to: "{{ inventory_hostname }}"
   register: rsync_boot
   changed_when: rsync_boot.stdout_lines | length > 0
 
