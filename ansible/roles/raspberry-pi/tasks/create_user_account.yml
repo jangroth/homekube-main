@@ -62,8 +62,10 @@
   when: not ssh_key_file.stat.exists
 
 - name: Update hostname in public key on the host
-  shell: sed -i "s/$(cat /home/{{ ssh_username }}/.ssh/id_ed25519.pub | cut -d' ' -f3)$/{{ inventory_hostname }}@homekube/" /home/{{ ssh_username
-    }}/.ssh/id_ed25519.pub
+  ansible.builtin.replace:
+    path: "/home/{{ ssh_username }}/.ssh/id_ed25519.pub"
+    regexp: '^(ssh-\S+\s+\S+)\s+\S+$'
+    replace: '\1 {{ inventory_hostname }}@homekube'
   when: not ssh_key_file.stat.exists
 
 - name: Copy node's public SSH key to control node

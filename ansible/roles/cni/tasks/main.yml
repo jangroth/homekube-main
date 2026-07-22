@@ -1,9 +1,9 @@
 ---
 - name: Check if Kubernetes cluster is ready
-  ansible.builtin.shell: kubectl get nodes {{ ansible_facts['hostname'] }} --no-headers
+  ansible.builtin.command: kubectl get nodes {{ ansible_facts['hostname'] }} --no-headers
   delegate_to: localhost
-  register: k8s_node_status
-  failed_when: k8s_node_status.rc != 0
+  register: cni_k8s_node_status
+  failed_when: cni_k8s_node_status.rc != 0
   changed_when: false
 
 - name: Add Cilium Helm repository
@@ -21,8 +21,8 @@
     --values {{ role_path }}/files/cilium-helm-values.yaml
     --detailed-exitcode
   delegate_to: localhost
-  register: helm_diff_check
-  failed_when: helm_diff_check.rc == 1 # rc=0: no changes, rc=1: error, rc=2: differences
+  register: cni_helm_diff_check
+  failed_when: cni_helm_diff_check.rc == 1 # rc=0: no changes, rc=1: error, rc=2: differences
 
 - name: Install/Upgrade Cilium CNI
   kubernetes.core.helm:
@@ -38,27 +38,27 @@
     wait: true
     kubeconfig: "{{ local_kubeconfig }}"
   delegate_to: localhost
-  when: "helm_diff_check.rc == 2"
-  register: cilium_install_result
+  when: "cni_helm_diff_check.rc == 2"
+  register: cni_cilium_install_result
 
 - name: Display Helm output
   ansible.builtin.debug:
-    var: cilium_install_result
-  when: cilium_install_result is defined
+    var: cni_cilium_install_result
+  when: cni_cilium_install_result is defined
 
 - name: Display Cilium installation result
   ansible.builtin.debug:
     msg: |
       Cilium {{ 'installed' if cilium_release.status is not defined else 'upgraded' }} successfully
-      Chart: {{ cilium_install_result.chart | default('cilium/cilium') }}
+      Chart: {{ cni_cilium_install_result.chart | default('cilium/cilium') }}
       Version: {{ cilium_version }}
-      Changed: {{ cilium_install_result.changed }}
+      Changed: {{ cni_cilium_install_result.changed }}
 
 - name: Wait for Cilium pods to be ready
   ansible.builtin.shell: kubectl get pods -n kube-system -l k8s-app=cilium --no-headers | grep -v Running || true
   delegate_to: localhost
-  register: cilium_pods_check
-  until: cilium_pods_check.stdout == ""
+  register: cni_cilium_pods_check
+  until: cni_cilium_pods_check.stdout == ""
   retries: 18
   delay: 10
   changed_when: false
@@ -66,6 +66,6 @@
 - name: Confirm node is ready with CNI
   ansible.builtin.shell: kubectl get nodes {{ ansible_facts['hostname'] }} --no-headers | awk '{print $2}'
   delegate_to: localhost
-  register: node_ready_status
-  failed_when: node_ready_status.stdout != "Ready"
+  register: cni_node_ready_status
+  failed_when: cni_node_ready_status.stdout != "Ready"
   changed_when: false

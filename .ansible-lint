@@ -3,7 +3,6 @@ profile: basic
 
 warn_list:
   - experimental
-  - yaml[line-length]
 
 # Intentional deviations from defaults:
 skip_list:

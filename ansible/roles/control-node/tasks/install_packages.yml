@@ -19,12 +19,12 @@
   delegate_to: localhost
 
 - name: Check for 'diff' plugin with helm command
-  ansible.builtin.shell: helm plugin list
+  ansible.builtin.command: helm plugin list
   delegate_to: localhost
   register: helm_plugins
 
 - name: Install helm diff plugin
-  ansible.builtin.shell: helm plugin install --verify=false https://github.com/databus23/helm-diff
+  ansible.builtin.command: helm plugin install --verify=false https://github.com/databus23/helm-diff
   delegate_to: localhost
   when: "'diff' not in helm_plugins.stdout"
 

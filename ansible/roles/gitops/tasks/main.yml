@@ -3,8 +3,8 @@
   kubernetes.core.k8s_info:
     kind: Node
     name: "{{ ansible_facts['hostname'] }}"
-  register: k8s_node_info
-  failed_when: k8s_node_info.resources | length == 0
+  register: gitops_k8s_node_info
+  failed_when: gitops_k8s_node_info.resources | length == 0
   changed_when: false
   delegate_to: localhost
 
@@ -19,7 +19,7 @@
     name: argocd
     release_namespace: argocd
   delegate_to: localhost
-  register: argocd_release
+  register: gitops_argocd_release
   failed_when: false
 
 - name: Install/Upgrade ArgoCD via Helm
@@ -33,14 +33,14 @@
       - "{{ role_path }}/files/argocd-helm-values.yaml"
     wait: true
   delegate_to: localhost
-  register: argocd_install_result
+  register: gitops_argocd_install_result
 
 - name: Display ArgoCD installation result
   ansible.builtin.debug:
     msg: |
-      ArgoCD {{ 'installed' if argocd_release.status is not defined else 'upgraded' }} successfully
+      ArgoCD {{ 'installed' if gitops_argocd_release.status is not defined else 'upgraded' }} successfully
       Version: {{ argocd_helm_chart_version }}
-      Changed: {{ argocd_install_result.changed }}
+      Changed: {{ gitops_argocd_install_result.changed }}
 
 - name: Wait for ArgoCD server to be ready
   kubernetes.core.k8s_info:
