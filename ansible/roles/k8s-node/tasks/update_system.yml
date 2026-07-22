@@ -57,6 +57,10 @@
       - vim
       - yq
     state: present
+  register: _common_pkgs
+  changed_when: >-
+    (_common_pkgs.stdout | default('')) | length > 0 and
+    '0 upgraded, 0 newly installed' not in (_common_pkgs.stdout | default(''))
 
 - name: Remove /etc/motd
   file:
