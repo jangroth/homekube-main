@@ -10,34 +10,24 @@
   block:
     - name: Get package information
       command: "apt-cache policy {{ item }}"
-      register: version_output
+      register: pkg_version_output
       changed_when: false
-      failed_when: version_output.rc != 0
+      failed_when: pkg_version_output.rc != 0
       loop: "{{ k8s_components }}"
 
     - name: Print version information
       debug:
-        msg: "{{ item }} - {{ version_output.results[k8s_components.index(item)].stdout_lines[1] }} - {{ version_output.results[k8s_components.index(item)].stdout_lines[2]
-          }}"
+        msg: "{{ item }} - {{ pkg_version_output.results[idx].stdout_lines[1] }} - {{ pkg_version_output.results[idx].stdout_lines[2] }}"
       loop: "{{ k8s_components }}"
+      loop_control:
+        index_var: idx
 
 - name: Get containerd version
   command: "containerd --version"
-  register: containerd_version
+  register: containerd_installed_version
   changed_when: false
-  failed_when: containerd_version.rc != 0
-
-- name: Get latest containerd release
-  uri:
-    url: "https://api.github.com/repos/containerd/containerd/releases/latest"
-    return_content: true
-    method: GET
-  register: latest_release
-
-- name: Set latest containerd version fact
-  set_fact:
-    containerd_latest_version: "{{ latest_release.json.tag_name }}"
+  failed_when: containerd_installed_version.rc != 0
 
 - name: Print containerd version information
   debug:
-    msg: "containerd - {{ containerd_version.stdout }} \n latest version - {{ containerd_latest_version }}"
+    msg: "containerd - installed: {{ containerd_installed_version.stdout }} | configured: v{{ containerd_version }}"
