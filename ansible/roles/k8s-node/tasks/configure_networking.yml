@@ -38,5 +38,4 @@
       [keyfile]
       unmanaged-devices=interface-name:cilium*;interface-name:lxc*;interface-name:veth*
     mode: "0644"
-  tags: networking-cilium-fix
   notify: Restart NetworkManager (Cilium fix)
