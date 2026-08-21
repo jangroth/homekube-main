@@ -12,3 +12,8 @@
     name: kubelet
     state: restarted
     daemon_reload: true
+
+- name: Restart NetworkManager (Cilium fix)
+  ansible.builtin.systemd:
+    name: NetworkManager
+    state: restarted

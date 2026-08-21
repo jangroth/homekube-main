@@ -28,3 +28,15 @@
   service:
     name: NetworkManager
     state: restarted
+
+- name: Exclude Cilium-managed interfaces from NetworkManager
+  ansible.builtin.copy:
+    dest: /etc/NetworkManager/conf.d/99-cilium-unmanaged.conf
+    content: |
+      # Without this, NetworkManager treats cilium_host/lxc* veths as unconfigured
+      # ethernet devices and loops forever trying (and failing) to DHCP them.
+      [keyfile]
+      unmanaged-devices=interface-name:cilium*;interface-name:lxc*;interface-name:veth*
+    mode: "0644"
+  tags: networking-cilium-fix
+  notify: Restart NetworkManager (Cilium fix)
