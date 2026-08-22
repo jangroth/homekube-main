@@ -1,0 +1,13 @@
+---
+- name: Ensure systemd manager conf.d exists
+  ansible.builtin.file:
+    path: /etc/systemd/system.conf.d
+    state: directory
+    mode: "0755"
+
+- name: Raise systemd runtime watchdog timeout
+  ansible.builtin.copy:
+    src: 50-homekube-watchdog.conf
+    dest: /etc/systemd/system.conf.d/50-homekube-watchdog.conf
+    mode: "0644"
+  notify: Reexec systemd

@@ -17,3 +17,6 @@
   ansible.builtin.systemd:
     name: NetworkManager
     state: restarted
+
+- name: Reexec systemd
+  ansible.builtin.command: systemctl daemon-reexec

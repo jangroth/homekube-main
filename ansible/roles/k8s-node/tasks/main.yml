@@ -14,6 +14,9 @@
   tags: update-only
 - name: Configure cgroups
   import_tasks: configure_cgroups.yml
+- name: Configure watchdog
+  import_tasks: configure_watchdog.yml
+  tags: update-only
 - name: Configure storage
   import_tasks: configure_storage.yml
   tags: update-only
