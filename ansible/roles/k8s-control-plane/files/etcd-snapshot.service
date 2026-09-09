@@ -1,0 +1,13 @@
+[Unit]
+Description=etcd snapshot backup
+Documentation=https://etcd.io/docs/
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/etcd-snapshot.sh
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=etcd-snapshot
+# Run as root so it can read /etc/kubernetes/pki/etcd/
+User=root

@@ -1,0 +1,39 @@
+---
+- name: Create etcd backup directory
+  ansible.builtin.file:
+    path: /var/lib/etcd-backups
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Install etcd snapshot script
+  ansible.builtin.copy:
+    src: etcd-snapshot.sh
+    dest: /usr/local/bin/etcd-snapshot.sh
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install etcd-snapshot systemd service
+  ansible.builtin.copy:
+    src: etcd-snapshot.service
+    dest: /etc/systemd/system/etcd-snapshot.service
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install etcd-snapshot systemd timer
+  ansible.builtin.copy:
+    src: etcd-snapshot.timer
+    dest: /etc/systemd/system/etcd-snapshot.timer
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Enable and start etcd-snapshot timer
+  ansible.builtin.systemd:
+    name: etcd-snapshot.timer
+    enabled: true
+    state: started
+    daemon_reload: true
