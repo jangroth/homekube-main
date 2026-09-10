@@ -54,6 +54,10 @@ controllerManager:
   extraArgs:
     - name: bind-address
       value: "0.0.0.0"
+    - name: node-monitor-period
+      value: "5s"
+    - name: node-monitor-grace-period
+      value: "40s"
 dns: {}
 encryptionAlgorithm: RSA-2048
 etcd:
