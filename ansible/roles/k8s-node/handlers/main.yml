@@ -19,4 +19,5 @@
     state: restarted
 
 - name: Reexec systemd
-  ansible.builtin.command: systemctl daemon-reexec
+  ansible.builtin.systemd:
+    daemon_reexec: true
