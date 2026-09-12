@@ -1,0 +1,69 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", "schedule:weekly"],
+  "enabledManagers": ["custom.regex", "github-actions"],
+  "automerge": false,
+  "labels": ["dependencies"],
+  "assignees": ["jangroth"],
+  "reviewers": ["jangroth"],
+  "prConcurrentLimit": 5,
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^ansible/group_vars/all\\.yml$/"],
+      "matchStrings": ["argocd_helm_chart_version: \"(?<currentValue>[^\"]+)\""],
+      "datasourceTemplate": "helm",
+      "depNameTemplate": "argo-cd",
+      "registryUrlTemplate": "https://argoproj.github.io/argo-helm"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^ansible/group_vars/all\\.yml$/"],
+      "matchStrings": ["cilium_version: \"(?<currentValue>[^\"]+)\""],
+      "datasourceTemplate": "helm",
+      "depNameTemplate": "cilium",
+      "registryUrlTemplate": "https://helm.cilium.io/"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^ansible/group_vars/all\\.yml$/"],
+      "matchStrings": ["containerd_version: \"(?<currentValue>[^\"]+)\""],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "containerd/containerd",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^ansible/group_vars/all\\.yml$/"],
+      "matchStrings": ["etcdctl_version: \"(?<currentValue>[^\"]+)\""],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "etcd-io/etcd",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^ansible/group_vars/all\\.yml$/"],
+      "matchStrings": ["kube_bench_version: \"(?<currentValue>[^\"]+)\""],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "aquasecurity/kube-bench",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^ansible/group_vars/all\\.yml$/"],
+      "matchStrings": ["longhorn_version: \"(?<currentValue>[^\"]+)\""],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "longhorn/cli",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Group minor and patch updates across pinned Ansible versions",
+      "matchManagers": ["custom.regex"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "Ansible-pinned version minor/patch updates",
+      "groupSlug": "ansible-versions-minor-patch"
+    }
+  ]
+}

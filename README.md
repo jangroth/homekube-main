@@ -34,3 +34,18 @@ cd ansible
 uv run ansible-playbook 20-configure-darth.yml --tags update-only
 uv run ansible-playbook 22-k8s-nodes.yml --tags update-only
 ```
+
+### Renovate PAT (human step)
+
+`.github/workflows/renovate.yml` needs a `RENOVATE_TOKEN` repo secret to open PRs — not creatable by automation. Tracks the Ansible-pinned versions in `ansible/group_vars/all.yml` (argocd, cilium, containerd, etcdctl, kube-bench, longhorn); `kubernetes_version` is excluded (see issue #44).
+
+1. GitHub → Settings → Developer settings → Fine-grained tokens → new token
+2. Repository access: only this repo (`jangroth/homekube-main`)
+3. Permissions: **Contents** (read/write), **Pull requests** (read/write)
+4. Add as repo secret `RENOVATE_TOKEN`: Settings → Secrets and variables → Actions
+
+Trigger a run manually instead of waiting for the weekly cron (Monday 06:00 UTC):
+
+```sh
+gh workflow run renovate.yml --repo jangroth/homekube-main
+```
