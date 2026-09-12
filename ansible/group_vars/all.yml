@@ -4,21 +4,21 @@ argocd_root_app_repo_url: "https://github.com/jangroth/homekube-apps.git"
 argocd_root_app_path: "applications"
 argocd_root_app_target_revision: "HEAD"
 
-cilium_version: "1.19.4"
+cilium_version: "1.20.1"
 
 control_plane_ip: "10.0.0.20"
 pod_cidr: "10.244.0.0/16"
 service_cidr: "10.96.0.0/12"
 
-containerd_version: "2.3.0"
+containerd_version: "2.3.5"
 
-etcdctl_version: "3.6.4"
+etcdctl_version: "3.7.1"
 
-kube_bench_version: "0.13.0"
+kube_bench_version: "0.16.0"
 
 kubernetes_version: "1.36.1"
 
-longhorn_version: "1.11.2"
+longhorn_version: "1.12.1"
 
 ssh_username: "homekube"
 
