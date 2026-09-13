@@ -1,0 +1,182 @@
+---
+- name: Upgrade k8s control plane
+  hosts: control_plane
+  become: true
+  vars:
+    kubeconfig: /etc/kubernetes/admin.conf
+  tasks:
+    - name: Cordon control plane node
+      ansible.builtin.command:
+        cmd: "kubectl --kubeconfig {{ kubeconfig }} cordon {{ inventory_hostname }}"
+
+    - name: Drain control plane node
+      ansible.builtin.command:
+        cmd: >-
+          kubectl --kubeconfig {{ kubeconfig }} drain {{ inventory_hostname }}
+          --ignore-daemonsets --delete-emptydir-data --timeout=300s
+
+    - name: Retarget Kubernetes apt repository
+      import_tasks: roles/k8s-node/tasks/retarget_kube_apt_repo.yml
+
+    - name: Update apt cache
+      apt:
+        update_cache: true
+
+    - name: Unhold kubeadm
+      dpkg_selections:
+        name: kubeadm
+        selection: install
+
+    - name: Install kubeadm
+      apt:
+        pkg: kubeadm
+        state: latest
+
+    - name: Hold kubeadm
+      dpkg_selections:
+        name: kubeadm
+        selection: hold
+
+    - name: Show kubeadm upgrade plan
+      ansible.builtin.command:
+        cmd: "kubeadm upgrade plan"
+      changed_when: false
+
+    - name: Apply kubeadm upgrade
+      ansible.builtin.command:
+        cmd: "kubeadm upgrade apply v{{ kubernetes_version }} -y"
+
+    - name: Unhold kubelet and kubectl
+      dpkg_selections:
+        name: "{{ item }}"
+        selection: install
+      loop:
+        - kubelet
+        - kubectl
+
+    - name: Install kubelet and kubectl
+      apt:
+        pkg:
+          - kubelet
+          - kubectl
+        state: latest
+
+    - name: Hold kubelet and kubectl
+      dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop:
+        - kubelet
+        - kubectl
+
+    - name: Restart kubelet
+      ansible.builtin.systemd:
+        name: kubelet
+        state: restarted
+        daemon_reload: true
+
+    - name: Uncordon control plane node
+      ansible.builtin.command:
+        cmd: "kubectl --kubeconfig {{ kubeconfig }} uncordon {{ inventory_hostname }}"
+
+    - name: Wait for control plane node to report new version and Ready
+      ansible.builtin.command:
+        cmd: >-
+          kubectl --kubeconfig {{ kubeconfig }} get node {{ inventory_hostname }}
+          -o jsonpath='{.status.nodeInfo.kubeletVersion}|{.status.conditions[?(@.type=="Ready")].status}'
+      register: control_plane_node_status
+      until: control_plane_node_status.stdout == ('v' + kubernetes_version + '|True')
+      retries: 30
+      delay: 10
+      changed_when: false
+
+- name: Upgrade k8s worker nodes
+  hosts: data_plane
+  become: true
+  serial: 1
+  vars:
+    kubeconfig: /etc/kubernetes/admin.conf
+  tasks:
+    - name: Cordon worker node
+      ansible.builtin.command:
+        cmd: "kubectl --kubeconfig {{ kubeconfig }} cordon {{ inventory_hostname }}"
+      delegate_to: "{{ groups['control_plane'][0] }}"
+
+    - name: Drain worker node
+      ansible.builtin.command:
+        cmd: >-
+          kubectl --kubeconfig {{ kubeconfig }} drain {{ inventory_hostname }}
+          --ignore-daemonsets --delete-emptydir-data --timeout=300s
+      delegate_to: "{{ groups['control_plane'][0] }}"
+
+    - name: Retarget Kubernetes apt repository
+      import_tasks: roles/k8s-node/tasks/retarget_kube_apt_repo.yml
+
+    - name: Update apt cache
+      apt:
+        update_cache: true
+
+    - name: Unhold kubeadm
+      dpkg_selections:
+        name: kubeadm
+        selection: install
+
+    - name: Install kubeadm
+      apt:
+        pkg: kubeadm
+        state: latest
+
+    - name: Hold kubeadm
+      dpkg_selections:
+        name: kubeadm
+        selection: hold
+
+    - name: Upgrade kubeadm node config
+      ansible.builtin.command:
+        cmd: "kubeadm upgrade node"
+
+    - name: Unhold kubelet and kubectl
+      dpkg_selections:
+        name: "{{ item }}"
+        selection: install
+      loop:
+        - kubelet
+        - kubectl
+
+    - name: Install kubelet and kubectl
+      apt:
+        pkg:
+          - kubelet
+          - kubectl
+        state: latest
+
+    - name: Hold kubelet and kubectl
+      dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop:
+        - kubelet
+        - kubectl
+
+    - name: Restart kubelet
+      ansible.builtin.systemd:
+        name: kubelet
+        state: restarted
+        daemon_reload: true
+
+    - name: Uncordon worker node
+      ansible.builtin.command:
+        cmd: "kubectl --kubeconfig {{ kubeconfig }} uncordon {{ inventory_hostname }}"
+      delegate_to: "{{ groups['control_plane'][0] }}"
+
+    - name: Wait for worker node to report new version and Ready
+      ansible.builtin.command:
+        cmd: >-
+          kubectl --kubeconfig {{ kubeconfig }} get node {{ inventory_hostname }}
+          -o jsonpath='{.status.nodeInfo.kubeletVersion}|{.status.conditions[?(@.type=="Ready")].status}'
+      register: worker_node_status
+      until: worker_node_status.stdout == ('v' + kubernetes_version + '|True')
+      retries: 30
+      delay: 10
+      changed_when: false
+      delegate_to: "{{ groups['control_plane'][0] }}"

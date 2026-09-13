@@ -44,6 +44,11 @@ tasks:
     dir: "{{.ANSIBLE_DIR}}"
     cmd: uv run ansible-playbook 31-k8s-workers.yml
 
+  32-k8s-upgrade:
+    desc: "Upgrade kubeadm/kubelet/kubectl to group_vars' kubernetes_version (control plane first, then workers one at a time; pass -- --limit pi0 to stage it)"
+    dir: "{{.ANSIBLE_DIR}}"
+    cmd: uv run ansible-playbook 32-k8s-upgrade.yml {{.CLI_ARGS}}
+
   40-cni:
     desc: "Install and configure CNI (Cilium)"
     dir: "{{.ANSIBLE_DIR}}"
