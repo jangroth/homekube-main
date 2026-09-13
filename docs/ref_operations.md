@@ -60,3 +60,15 @@ curl -X GET http://127.0.0.1:8001/api/v1/nodes/pi0/proxy/configz | jq # pi0,1,2
 
 ### CNI
 - `pod-network-cidr`: `10.244.0.0/16` # 65,536 (10.244.0.0 -> 10.244.255.255)
+
+### watchdog
+- conf
+  - `/etc/systemd/system.conf.d/50-homekube-watchdog.conf`, `RuntimeWatchdogSec=10min`, applied by `configure_watchdog.yml`
+- verify
+  - `ssh homekube@pi0 "systemctl show | grep -E 'RuntimeWatchdog|ShutdownWatchdog'"`
+  - `ssh homekube@pi0 "sudo wdctl"`
+- detect a watchdog reset
+  - `ssh homekube@pi0 "journalctl -b -1 -k | grep -i watchdog"`
+- heavy Helm upgrades (`task 50-gitops`) on pi0
+  - monitor: `ssh homekube@pi0 "watch -n2 uptime"`
+  - idempotent — re-run after a reset
