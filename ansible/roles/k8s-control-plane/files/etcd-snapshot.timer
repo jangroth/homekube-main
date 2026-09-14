@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily etcd snapshot backup
+Requires=etcd-snapshot.service
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

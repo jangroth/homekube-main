@@ -11,3 +11,6 @@
 
 - name: Install kube-bench
   import_tasks: install_kube_bench.yml
+
+- name: Set up etcd snapshot timer
+  import_tasks: setup_etcd_snapshot.yml
