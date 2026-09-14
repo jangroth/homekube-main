@@ -37,6 +37,20 @@
         name: kubeadm
         selection: hold
 
+    - name: Copy kubeadm configuration
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/roles/k8s-control-plane/files/kubeadm-config.yaml"
+        dest: "/home/{{ ssh_username }}/kubeadm-config.yaml"
+        backup: false
+        owner: "{{ ssh_username }}"
+        group: "{{ ssh_username }}"
+        mode: "0644"
+
+    - name: Re-upload kubeadm ClusterConfiguration
+      ansible.builtin.command:
+        cmd: "kubeadm init phase upload-config kubeadm --config /home/{{ ssh_username }}/kubeadm-config.yaml"
+      changed_when: true
+
     - name: Show kubeadm upgrade plan
       ansible.builtin.command:
         cmd: "kubeadm upgrade plan"

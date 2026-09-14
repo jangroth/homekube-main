@@ -63,7 +63,7 @@ etcd:
       - name: listen-metrics-urls
         value: "http://0.0.0.0:2381"
 imageRepository: registry.k8s.io
-kubernetesVersion: 1.36.1 # custom
+kubernetesVersion: 1.37.0 # custom
 networking:
   dnsDomain: cluster.local
   podSubnet: "10.244.0.0/16" # custom
