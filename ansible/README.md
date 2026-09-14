@@ -101,7 +101,7 @@ ansible-playbook 03-setup-k8s-nodes.yml --tags update-only
 
 **Supported Tags:**
 
-- `update-only`: Update system packages and storage configuration, display dependencies
+- `update-only`: Update system packages and storage configuration
 - `unhold-kube`: Unhold Kubernetes packages for updates
 
 ### 4. k8s-control-plane

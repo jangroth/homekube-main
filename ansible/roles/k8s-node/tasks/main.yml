@@ -39,6 +39,3 @@
   tags: update-only
 - name: Configure Tailscale subnet
   import_tasks: configure_tailscale_subnet.yml
-- name: Display dependencies
-  import_tasks: display_dependencies.yml
-  tags: update-only
