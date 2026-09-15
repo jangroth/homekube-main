@@ -70,5 +70,6 @@ curl -X GET http://127.0.0.1:8001/api/v1/nodes/pi0/proxy/configz | jq # pi0,1,2
 - detect a watchdog reset
   - `ssh homekube@pi0 "journalctl -b -1 -k | grep -i watchdog"`
 - heavy Helm upgrades (`task 50-gitops`) on pi0
+  - root cause: load spike can trip the BCM2835 1-min watchdog timeout; fixed by raising `RuntimeWatchdogSec` to 10 min (conf above) — splitting Helm upgrades is not needed
   - monitor: `ssh homekube@pi0 "watch -n2 uptime"`
-  - idempotent — re-run after a reset
+  - idempotent — re-run after a reset if one occurs
