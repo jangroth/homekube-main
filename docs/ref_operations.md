@@ -61,6 +61,27 @@ curl -X GET http://127.0.0.1:8001/api/v1/nodes/pi0/proxy/configz | jq # pi0,1,2
 ### CNI
 - `pod-network-cidr`: `10.244.0.0/16` # 65,536 (10.244.0.0 -> 10.244.255.255)
 
+### pod restart triage
+- list pods with high restart counts
+  - `kubectl get pods -A --sort-by='.status.containerStatuses[0].restartCount'`
+- identify failure type (OOMKilled / CrashLoopBackOff / liveness probe)
+  - `kubectl describe pod -n <namespace> <pod>` — check `Last State`, `Exit Code`, `Reason`
+  - exit code 137 → SIGKILL (OOMKilled or cgroup limit); exit code 1/2 → app crash
+- check previous-container logs
+  - `kubectl logs -n <namespace> <pod> -p` (previous container instance)
+  - `kubectl logs -n <namespace> <pod> -p --all-containers=true`
+- Cilium-stack specifics
+  - operator: `kubectl logs -n kube-system deploy/cilium-operator -p`
+  - hubble-relay: `kubectl logs -n kube-system deploy/hubble-relay -p`
+  - daemonset pods: `kubectl logs -n kube-system -l app.kubernetes.io/part-of=cilium -p`
+  - check if Cilium nodes are healthy: `cilium status` (via `kubectl exec -n kube-system ds/cilium -c cilium-agent -- cilium status`)
+- check node-level resource pressure (OOM, disk, CPU throttling)
+  - `kubectl top nodes` / `kubectl top pods -A`
+  - `kubectl describe node <node>` — check `Conditions` and `Events`
+  - `journalctl -b -k | grep -E 'oom|Out of memory|Killed process'` (on the node)
+- etcd / control-plane static pods (restarts are independent of the DaemonSet/Deployment controller)
+  - use `sudo crictl logs` — see api-server / etcd sections above
+
 ### watchdog
 - conf
   - `/etc/systemd/system.conf.d/50-homekube-watchdog.conf`, `RuntimeWatchdogSec=10min`, applied by `configure_watchdog.yml`
