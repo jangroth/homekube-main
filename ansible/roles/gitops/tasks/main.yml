@@ -29,6 +29,7 @@
     chart_version: "{{ argocd_helm_chart_version }}"
     release_namespace: argocd
     create_namespace: true
+    update_repo_cache: true
     values_files:
       - "{{ role_path }}/files/argocd-helm-values.yaml"
     wait: true
