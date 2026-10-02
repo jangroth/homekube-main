@@ -7,6 +7,12 @@ k8sServiceHost: "10.0.0.20" # switch IP — Tailscale is invisible to k8s
 k8sServicePort: "6443"
 kubeProxyReplacement: true # kubeadm skips kube-proxy (skipPhases: addon/kube-proxy)
 
+# Disable socket-level load balancing: these CO-RE eBPF programs require kernel BTF
+# (/sys/kernel/btf/vmlinux), which is absent on RPi kernels. TC-level Service routing
+# (cil_to/from_netdev, cil_from_container) continues to handle ClusterIP traffic correctly.
+socketLB:
+  enabled: false
+
 devices: "eth0,wlan0,tailscale0" # tailscale0 added (DECISION-032) so Cilium's cil_from_netdev intercepts VIP traffic arriving from Tailscale subnet routing
 routingMode: "tunnel"
 tunnelProtocol: "vxlan"
