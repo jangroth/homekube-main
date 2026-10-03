@@ -7,12 +7,13 @@
     autoclean: true
     autoremove: true
 
-- name: Check if a reboot is needed
-  register: reboot_required_file
-  stat:
-    path: /var/run/reboot-required
+- name: Check for a pending kernel reboot
+  ansible.builtin.include_role:
+    name: k8s-node
+    tasks_from: check_pending_reboot
 
-- name: Reboot if needed
+# Opt-in via -e allow_reboot=true: this role also runs during provisioning
+- name: Reboot into the installed kernel
   reboot:
     msg: "Reboot initiated by Ansible for kernel updates"
     connect_timeout: 5
@@ -20,4 +21,6 @@
     pre_reboot_delay: 0
     post_reboot_delay: 30
     test_command: uptime
-  when: reboot_required_file.stat.exists
+  when:
+    - kernel_reboot_pending
+    - allow_reboot | default(false) | bool

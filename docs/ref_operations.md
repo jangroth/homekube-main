@@ -72,3 +72,9 @@ curl -X GET http://127.0.0.1:8001/api/v1/nodes/pi0/proxy/configz | jq # pi0,1,2
 - heavy Helm upgrades (`task 50-gitops`) on pi0
   - monitor: `ssh homekube@pi0 "watch -n2 uptime"`
   - idempotent — re-run after a reset
+- status — the crashes are power starvation, not the watchdog (decision 068)
+  - all nodes negotiate 5V/3A (`max_current=3000`); a Pi 5 with NVMe needs 5V/5A. The shared 268W charger reaches that wattage at 20V, not at 5V
+  - crashes leave no watchdog/OOM/panic trace and never self-recover — power is lost, which is not what a watchdog reset does
+  - the 10min timeout (decision 054) stays, but was never the fix
+  - check a node: `ssh homekube@pi0 "sudo vcgencmd get_throttled"` — bit 16 (`0x10000`) = undervoltage has occurred
+  - `ssh homekube@pi0 "sudo journalctl -k | grep -i undervoltage"` for timestamps

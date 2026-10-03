@@ -1,0 +1,195 @@
+---
+# Read-only. Compares runtime against the declared source of truth (group_vars/all.yml)
+# and checks that the four nodes agree with each other. Exits non-zero on drift.
+- name: Verify runtime matches declared state
+  hosts: all_nodes
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Check for a pending kernel reboot
+      ansible.builtin.import_tasks: roles/k8s-node/tasks/check_pending_reboot.yml
+
+    - name: Gather package facts
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Read installed containerd version
+      ansible.builtin.command: containerd --version
+      register: _containerd
+      changed_when: false
+      failed_when: false
+
+    - name: Read installed etcdctl version
+      ansible.builtin.command: /usr/local/bin/etcdctl version
+      register: _etcdctl
+      changed_when: false
+      failed_when: false
+
+    - name: Read installed Tailscale version
+      ansible.builtin.command: tailscale version
+      register: _tailscale
+      changed_when: false
+      failed_when: false
+
+    # systemd module sets state; it cannot read a property
+    - name: Read effective systemd watchdog timeout # noqa: command-instead-of-module
+      ansible.builtin.command: systemctl show -p RuntimeWatchdogUSec --value
+      register: _watchdog_runtime
+      changed_when: false
+
+    - name: Read managed watchdog drop-in
+      ansible.builtin.slurp:
+        src: /etc/systemd/system.conf.d/50-homekube-watchdog.conf
+      register: _watchdog_conf
+      failed_when: false
+
+    - name: Read kernel network invariants
+      ansible.builtin.slurp:
+        src: "{{ item }}"
+      register: _sysctls
+      loop:
+        - /proc/sys/net/ipv4/ip_forward
+        - /proc/sys/net/bridge/bridge-nf-call-iptables
+
+    - name: Read loaded kernel modules
+      ansible.builtin.command: lsmod
+      register: _lsmod
+      changed_when: false
+
+    - name: Record node state
+      ansible.builtin.set_fact:
+        node_state:
+          kernel_running: "{{ ansible_facts.kernel }}"
+          kernel_installed: "{{ expected_kernel }}"
+          os: "{{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}"
+          kubelet: "{{ ansible_facts.packages['kubelet'][0]['version'] | default('absent') }}"
+          kubeadm: "{{ ansible_facts.packages['kubeadm'][0]['version'] | default('absent') }}"
+          kubectl: "{{ ansible_facts.packages['kubectl'][0]['version'] | default('absent') }}"
+          containerd: "{{ _containerd.stdout | regex_search('v([0-9]+\\.[0-9]+\\.[0-9]+)', '\\1') | first | default('absent') }}"
+          etcdctl: "{{ _etcdctl.stdout | regex_search('etcdctl version: ([0-9.]+)', '\\1') | first | default('absent') }}"
+          tailscale: "{{ _tailscale.stdout_lines[0] | default('absent') }}"
+          watchdog_runtime: "{{ _watchdog_runtime.stdout | trim }}"
+          watchdog_declared: "{{ (_watchdog_conf.content | default('') | b64decode) | regex_search('RuntimeWatchdogSec=(\\S+)', '\\1') | first | default('absent') }}"
+          ip_forward: "{{ _sysctls.results[0].content | b64decode | trim }}"
+          bridge_nf: "{{ _sysctls.results[1].content | b64decode | trim }}"
+          modules: "{{ ['br_netfilter', 'overlay'] | select('in', _lsmod.stdout) | list | sort | join(',') }}"
+
+    - name: Start with no findings
+      ansible.builtin.set_fact:
+        node_findings: []
+
+    - name: Flag pending kernel reboot
+      ansible.builtin.set_fact:
+        node_findings: "{{ node_findings + [inventory_hostname ~ ' kernel: running ' ~ node_state.kernel_running ~ ', installed ' ~ node_state.kernel_installed] }}"
+      when: kernel_reboot_pending
+
+    # kube packages carry a Debian revision suffix (1.37.0-1.1), so compare on prefix
+    - name: Flag kube package drift
+      ansible.builtin.set_fact:
+        node_findings: "{{ node_findings + [inventory_hostname ~ ' ' ~ item.key ~ ': ' ~ item.value ~ ' does not match kubernetes_version ' ~ kubernetes_version] }}"
+      when: not item.value.startswith(kubernetes_version)
+      loop:
+        - {key: kubelet, value: "{{ node_state.kubelet }}"}
+        - {key: kubeadm, value: "{{ node_state.kubeadm }}"}
+        - {key: kubectl, value: "{{ node_state.kubectl }}"}
+      loop_control:
+        label: "{{ item.key }}"
+
+    - name: Flag binary version drift
+      ansible.builtin.set_fact:
+        node_findings: "{{ node_findings + [inventory_hostname ~ ' ' ~ item.key ~ ': ' ~ item.value ~ ' != declared ' ~ item.declared] }}"
+      when: item.value != item.declared
+      loop:
+        - {key: containerd, value: "{{ node_state.containerd }}", declared: "{{ containerd_version }}"}
+        - {key: etcdctl, value: "{{ node_state.etcdctl }}", declared: "{{ etcdctl_version }}"}
+      loop_control:
+        label: "{{ item.key }}"
+
+    - name: Flag watchdog drift
+      ansible.builtin.set_fact:
+        node_findings: "{{ node_findings + [inventory_hostname ~ ' watchdog: runtime ' ~ node_state.watchdog_runtime ~ ', declared ' ~ node_state.watchdog_declared] }}"
+      when: node_state.watchdog_runtime != node_state.watchdog_declared
+
+    - name: Flag kernel network invariant drift
+      ansible.builtin.set_fact:
+        node_findings: "{{ node_findings + [inventory_hostname ~ ' ' ~ item.key ~ ': ' ~ item.value ~ ', expected ' ~ item.expected] }}"
+      when: item.value != item.expected
+      loop:
+        - {key: ip_forward, value: "{{ node_state.ip_forward }}", expected: "1"}
+        - {key: bridge-nf-call-iptables, value: "{{ node_state.bridge_nf }}", expected: "1"}
+        - {key: modules, value: "{{ node_state.modules }}", expected: "br_netfilter,overlay"}
+      loop_control:
+        label: "{{ item.key }}"
+
+- name: Verify cluster-level declared state
+  hosts: control_plane
+  become: true
+  gather_facts: false
+  vars:
+    kubeconfig: /etc/kubernetes/admin.conf
+
+  tasks:
+    - name: Read running Cilium image
+      ansible.builtin.command: >-
+        kubectl --kubeconfig {{ kubeconfig }} -n kube-system
+        get daemonset cilium -o jsonpath={.spec.template.spec.containers[0].image}
+      register: _cilium_image
+      changed_when: false
+      failed_when: false
+
+    - name: Flag Cilium drift
+      ansible.builtin.set_fact:
+        cluster_findings: "{{ ['cilium: running ' ~ _running_cilium ~ ' != declared ' ~ cilium_version] }}"
+      vars:
+        _running_cilium: "{{ _cilium_image.stdout | regex_search('cilium:v([^@]+)', '\\1') | first | default('unknown') }}"
+      when: _cilium_image.stdout is not search('cilium:v' ~ cilium_version)
+
+- name: Report drift
+  hosts: all_nodes
+  become: false
+  gather_facts: false
+
+  tasks:
+    - name: Collect cross-node differences
+      ansible.builtin.set_fact:
+        uniformity_findings: "{{ uniformity_findings | default([]) + [item ~ ' differs across nodes: ' ~ (_values | join(' / '))] }}"
+      vars:
+        _values: "{{ ansible_play_hosts | map('extract', hostvars, ['node_state', item]) | unique | list }}"
+      when: _values | length > 1
+      loop:
+        - kernel_running
+        - os
+        - tailscale
+        - watchdog_runtime
+        - modules
+      run_once: true
+
+    - name: Show node state
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }}: kernel {{ node_state.kernel_running }}
+          (installed {{ node_state.kernel_installed }}),
+          kubelet {{ node_state.kubelet }}, containerd {{ node_state.containerd }},
+          etcdctl {{ node_state.etcdctl }}, tailscale {{ node_state.tailscale }},
+          watchdog {{ node_state.watchdog_runtime }}
+
+    - name: Show drift summary
+      ansible.builtin.debug:
+        msg: "{{ _all_findings if _all_findings | length > 0 else ['none'] }}"
+      vars:
+        _all_findings: >-
+          {{ (ansible_play_hosts | map('extract', hostvars, 'node_findings') | flatten)
+             + (uniformity_findings | default([]))
+             + (hostvars[groups['control_plane'][0]]['cluster_findings'] | default([])) }}
+      run_once: true
+
+    - name: Fail if any drift was found
+      ansible.builtin.assert:
+        that:
+          - (ansible_play_hosts | map('extract', hostvars, 'node_findings') | flatten | length) == 0
+          - (uniformity_findings | default([]) | length) == 0
+          - (hostvars[groups['control_plane'][0]]['cluster_findings'] | default([]) | length) == 0
+        fail_msg: "Drift detected — see summary above"
+        success_msg: "Runtime matches declared state on all nodes"
+      run_once: true

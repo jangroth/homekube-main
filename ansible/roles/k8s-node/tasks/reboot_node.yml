@@ -1,0 +1,115 @@
+---
+# Cordon-and-rebuild rather than drain: Longhorn's instance-manager PDBs allow 0
+# disruptions, so eviction deadlocks. Each volume runs on one replica until rebuild.
+- name: Resolve kubectl host
+  ansible.builtin.set_fact:
+    _kube_host: "{{ groups['control_plane'][0] }}"
+    _kubeconfig: /etc/kubernetes/admin.conf
+
+- name: Check for a pending kernel reboot
+  ansible.builtin.include_tasks: check_pending_reboot.yml
+
+- name: Skip node already on the installed kernel
+  ansible.builtin.debug:
+    msg: "{{ inventory_hostname }} already running {{ ansible_facts.kernel }} — skipping"
+  when: not kernel_reboot_pending
+
+- name: Reboot into the installed kernel
+  when: kernel_reboot_pending
+  block:
+    - name: Read Longhorn volume health
+      ansible.builtin.command: >-
+        kubectl --kubeconfig {{ _kubeconfig }} -n longhorn-system
+        get volumes.longhorn.io -o json
+      delegate_to: "{{ _kube_host }}"
+      register: _lh_pre
+      changed_when: false
+
+    # Anything not positively healthy counts as unhealthy, including attaching/unknown
+    - name: Require every attached volume to be healthy
+      ansible.builtin.assert:
+        that: _unhealthy | length == 0
+        fail_msg: >-
+          Longhorn not healthy ({{ _unhealthy | join(', ') }}) —
+          refusing to reboot {{ inventory_hostname }}
+      vars:
+        _unhealthy: >-
+          {{ (_lh_pre.stdout | from_json)['items']
+             | rejectattr('status.state', 'eq', 'detached')
+             | rejectattr('status.robustness', 'eq', 'healthy')
+             | map(attribute='metadata.name') | list }}
+
+    - name: Cordon node
+      ansible.builtin.command: >-
+        kubectl --kubeconfig {{ _kubeconfig }} cordon {{ inventory_hostname }}
+      delegate_to: "{{ _kube_host }}"
+      changed_when: true
+
+    - name: Reboot
+      ansible.builtin.reboot:
+        msg: "Rebooting into {{ expected_kernel }} (ansible 23-rolling-reboot)"
+        reboot_timeout: 900
+        post_reboot_delay: 30
+        test_command: uptime
+
+    # pi0's own API server is a static pod and returns after SSH does
+    - name: Wait for the Kubernetes API to respond
+      ansible.builtin.command: >-
+        kubectl --kubeconfig {{ _kubeconfig }} get --raw /readyz
+      delegate_to: "{{ _kube_host }}"
+      register: _readyz
+      until: _readyz.rc == 0
+      retries: 30
+      delay: 10
+      changed_when: false
+
+    - name: Wait for node to report Ready
+      ansible.builtin.command: >-
+        kubectl --kubeconfig {{ _kubeconfig }} wait --for=condition=Ready
+        node/{{ inventory_hostname }} --timeout=600s
+      delegate_to: "{{ _kube_host }}"
+      changed_when: false
+
+    - name: Uncordon node
+      ansible.builtin.command: >-
+        kubectl --kubeconfig {{ _kubeconfig }} uncordon {{ inventory_hostname }}
+      delegate_to: "{{ _kube_host }}"
+      changed_when: true
+
+    - name: Re-gather facts after reboot
+      ansible.builtin.setup:
+
+    - name: Re-check kernel after reboot
+      ansible.builtin.include_tasks: check_pending_reboot.yml
+
+    - name: Verify the node booted into the installed kernel
+      ansible.builtin.assert:
+        that: not kernel_reboot_pending
+        fail_msg: "{{ inventory_hostname }} booted {{ ansible_facts.kernel }}, expected {{ expected_kernel }}"
+        success_msg: "{{ inventory_hostname }} now running {{ ansible_facts.kernel }}"
+
+    # Blocks the next node until redundancy is restored.
+    # Two things this must get right, both learned the hard way:
+    #  - require positive health; a volume mid-detach reports "unknown", which an
+    #    absence-of-"degraded" test waves through
+    #  - require it repeatedly; a rejoining node starts a second wave of churn
+    #    after the first rebuild completes, so one healthy sample proves nothing
+    - name: Wait for Longhorn replicas to rebuild and stay healthy
+      ansible.builtin.command: >-
+        kubectl --kubeconfig {{ _kubeconfig }} -n longhorn-system
+        get volumes.longhorn.io -o json
+      delegate_to: "{{ _kube_host }}"
+      register: _lh_post
+      until: >-
+        _lh_post.rc == 0
+        and ((_lh_post.stdout | from_json)['items']
+             | rejectattr('status.state', 'eq', 'detached')
+             | rejectattr('status.robustness', 'eq', 'healthy')
+             | list | length) == 0
+      retries: 90
+      delay: 20
+      changed_when: false
+      loop: [1, 2, 3]
+      loop_control:
+        pause: 45
+        label: "confirmation {{ item }}/3"

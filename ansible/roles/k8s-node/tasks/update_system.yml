@@ -37,6 +37,10 @@
     (_common_pkgs.stdout | default('')) | length > 0 and
     '0 upgraded, 0 newly installed' not in (_common_pkgs.stdout | default(''))
 
+# Report only — kernel reboots are deliberate, never a side effect of an update
+- name: Check for a pending kernel reboot
+  import_tasks: check_pending_reboot.yml
+
 - name: Remove /etc/motd
   file:
     path: /etc/motd

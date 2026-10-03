@@ -1,0 +1,72 @@
+---
+# Reboots nodes into their installed kernel, one at a time, data plane before pi0.
+# Without -e confirm_reboot=yes this is a preview and changes nothing.
+# -e reboot_control_plane=false holds pi0 back.
+- name: Report which nodes need a reboot
+  hosts: all_nodes
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Check for a pending kernel reboot
+      ansible.builtin.import_tasks: roles/k8s-node/tasks/check_pending_reboot.yml
+
+- name: Confirm intent and cluster health
+  hosts: control_plane
+  become: true
+  gather_facts: false
+  vars:
+    kubeconfig: /etc/kubernetes/admin.conf
+
+  tasks:
+    - name: Show reboot order
+      ansible.builtin.debug:
+        msg: >-
+          Reboot order: {{ (groups['data_plane'] + groups['control_plane']) | join(', ') }}.
+          Nodes already on the installed kernel are skipped individually —
+          see the PENDING REBOOT lines above for which actually need it.
+
+    - name: Require explicit confirmation
+      ansible.builtin.assert:
+        that: (confirm_reboot | default('')) == 'yes'
+        fail_msg: "Preview only. Re-run with -e confirm_reboot=yes to reboot."
+        success_msg: "Confirmed — proceeding with rolling reboot"
+
+    - name: Require all nodes Ready
+      ansible.builtin.command: >-
+        kubectl --kubeconfig {{ kubeconfig }} wait --for=condition=Ready
+        nodes --all --timeout=60s
+      changed_when: false
+
+- name: Roll data plane
+  hosts: data_plane
+  become: true
+  gather_facts: true
+  serial: 1
+  any_errors_fatal: true
+
+  tasks:
+    - name: Reboot node
+      ansible.builtin.include_role:
+        name: k8s-node
+        tasks_from: reboot_node
+
+- name: Roll control plane
+  hosts: control_plane
+  become: true
+  gather_facts: true
+  serial: 1
+  any_errors_fatal: true
+
+  tasks:
+    # -e reboot_control_plane=false rolls the data plane only, keeping the guard play intact
+    - name: Reboot node
+      ansible.builtin.include_role:
+        name: k8s-node
+        tasks_from: reboot_node
+      when: (reboot_control_plane | default(true)) | bool
+
+    - name: Report control plane held back
+      ansible.builtin.debug:
+        msg: "pi0 not rebooted — reboot_control_plane=false"
+      when: not ((reboot_control_plane | default(true)) | bool)

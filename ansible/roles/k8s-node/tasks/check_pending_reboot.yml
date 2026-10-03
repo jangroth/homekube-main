@@ -1,0 +1,37 @@
+---
+# /var/run/reboot-required is never written on RPi OS Lite (no update-notifier-common),
+# so staleness is derived from the installed kernel meta-package instead.
+- name: Read kernel meta-package dependencies
+  ansible.builtin.command: dpkg-query -W -f=${Depends} linux-image-rpi-2712
+  register: _kernel_meta
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Determine kernel the installed meta-package points at
+  ansible.builtin.set_fact:
+    expected_kernel: "{{ _kernel_meta.stdout | regex_search('linux-image-([^ ,]+)', '\\1') | first }}"
+  when:
+    - _kernel_meta.rc == 0
+    - _kernel_meta.stdout is search('linux-image-')
+
+- name: Fall back when the installed kernel cannot be determined
+  ansible.builtin.set_fact:
+    expected_kernel: "unknown"
+  when: expected_kernel is not defined
+
+- name: Record whether a kernel reboot is pending
+  ansible.builtin.set_fact:
+    kernel_reboot_pending: "{{ expected_kernel not in ['unknown', ansible_facts.kernel] }}"
+
+- name: Report pending kernel reboot
+  ansible.builtin.debug:
+    msg: >-
+      PENDING REBOOT: running {{ ansible_facts.kernel }},
+      installed {{ expected_kernel }} — reboot deliberately, never as a side effect
+  when: kernel_reboot_pending
+
+- name: Report that the installed kernel could not be determined
+  ansible.builtin.debug:
+    msg: "Could not read linux-image-rpi-2712 — kernel staleness unknown on this host"
+  when: expected_kernel == 'unknown'

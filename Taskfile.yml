@@ -75,6 +75,16 @@ tasks:
     dir: "{{.ANSIBLE_DIR}}"
     cmd: uv run ansible-playbook 22-k8s-nodes.yml --tags update-only
 
+  23-rolling-reboot:
+    desc: "Reboot nodes into their installed kernel, one at a time (preview unless CLI_ARGS has -e confirm_reboot=yes)"
+    dir: "{{.ANSIBLE_DIR}}"
+    cmd: uv run ansible-playbook 23-rolling-reboot.yml {{.CLI_ARGS}}
+
+  verify-drift:
+    desc: "Verify runtime matches declared state (read-only, non-zero on drift)"
+    dir: "{{.ANSIBLE_DIR}}"
+    cmd: uv run ansible-playbook 90-verify-drift.yml
+
   lint:
     desc: "Lint Ansible playbooks and roles with ansible-lint"
     cmd: uv run ansible-lint {{.ANSIBLE_DIR}}
