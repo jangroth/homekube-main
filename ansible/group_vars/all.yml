@@ -4,7 +4,8 @@ argocd_root_app_repo_url: "https://github.com/jangroth/homekube-apps.git"
 argocd_root_app_path: "applications"
 argocd_root_app_target_revision: "HEAD"
 
-cilium_version: "1.20.2"
+# Held: 1.19.8/1.20.2+ need kernel BTF, absent on RPi OS kernels (decision 065). Renovate ignores this dep.
+cilium_version: "1.20.1"
 
 control_plane_ip: "10.0.0.20"
 pod_cidr: "10.244.0.0/16"

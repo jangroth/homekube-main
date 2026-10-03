@@ -64,6 +64,11 @@
       "matchUpdateTypes": ["minor", "patch"],
       "groupName": "Ansible-pinned version minor/patch updates",
       "groupSlug": "ansible-versions-minor-patch"
+    },
+    {
+      "description": "Hold Cilium at 1.20.1 — 1.19.8/1.20.2+ load socket-LB eBPF via bpf_core_enum_value_exists(), requiring kernel BTF that Raspberry Pi OS kernels do not ship (decision 065, upstream cilium/cilium#48778). Re-enable once RPi ships BTF or Cilium supports an external BTF path.",
+      "matchDepNames": ["cilium"],
+      "enabled": false
     }
   ]
 }
