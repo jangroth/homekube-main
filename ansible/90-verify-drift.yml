@@ -57,6 +57,14 @@
       register: _lsmod
       changed_when: false
 
+    # Reported, not asserted: 3000 is the known-bad state until the PSUs are
+    # replaced (decision 068). Turn into an assertion once every node reads 5000.
+    - name: Read negotiated USB-PD current limit
+      ansible.builtin.command: od -An -tu4 --endian=big /proc/device-tree/chosen/power/max_current
+      register: _max_current
+      changed_when: false
+      failed_when: false
+
     - name: Record node state
       ansible.builtin.set_fact:
         node_state:
@@ -74,6 +82,7 @@
           ip_forward: "{{ _sysctls.results[0].content | b64decode | trim }}"
           bridge_nf: "{{ _sysctls.results[1].content | b64decode | trim }}"
           modules: "{{ ['br_netfilter', 'overlay'] | select('in', _lsmod.stdout) | list | sort | join(',') }}"
+          max_current_ma: "{{ _max_current.stdout | default('') | trim | default('unknown', true) }}"
 
     - name: Start with no findings
       ansible.builtin.set_fact:
@@ -172,7 +181,8 @@
           (installed {{ node_state.kernel_installed }}),
           kubelet {{ node_state.kubelet }}, containerd {{ node_state.containerd }},
           etcdctl {{ node_state.etcdctl }}, tailscale {{ node_state.tailscale }},
-          watchdog {{ node_state.watchdog_runtime }}
+          watchdog {{ node_state.watchdog_runtime }},
+          max_current {{ node_state.max_current_ma }}mA{{ ' (needs 5000 — decision 068)' if node_state.max_current_ma != '5000' else '' }}
 
     - name: Show drift summary
       ansible.builtin.debug:
