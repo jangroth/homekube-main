@@ -1,5 +1,5 @@
 ---
-argocd_helm_chart_version: "10.9.2"
+argocd_helm_chart_version: "10.10.2"
 argocd_root_app_repo_url: "https://github.com/jangroth/homekube-apps.git"
 argocd_root_app_path: "applications"
 argocd_root_app_target_revision: "HEAD"
@@ -19,7 +19,7 @@ kube_bench_version: "0.16.0"
 
 kubernetes_version: "1.37.0"
 
-longhorn_version: "1.12.1"
+longhorn_version: "1.13.0"
 
 ssh_username: "homekube"
 
