@@ -9,13 +9,17 @@
 - name: Check for a pending kernel reboot
   ansible.builtin.include_tasks: check_pending_reboot.yml
 
+- name: Decide whether to reboot this node
+  ansible.builtin.set_fact:
+    _reboot_node: "{{ kernel_reboot_pending or ((force_reboot | default('')) == 'yes') }}"
+
 - name: Skip node already on the installed kernel
   ansible.builtin.debug:
     msg: "{{ inventory_hostname }} already running {{ ansible_facts.kernel }} — skipping"
-  when: not kernel_reboot_pending
+  when: not _reboot_node
 
 - name: Reboot into the installed kernel
-  when: kernel_reboot_pending
+  when: _reboot_node
   block:
     - name: Read Longhorn volume health
       ansible.builtin.command: >-

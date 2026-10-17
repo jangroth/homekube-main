@@ -2,6 +2,7 @@
 # Reboots nodes into their installed kernel, one at a time, data plane before pi0.
 # Without -e confirm_reboot=yes this is a preview and changes nothing.
 # -e reboot_control_plane=false holds pi0 back.
+# -e force_reboot=yes reboots every node even when none has a pending kernel.
 - name: Report which nodes need a reboot
   hosts: all_nodes
   become: true
