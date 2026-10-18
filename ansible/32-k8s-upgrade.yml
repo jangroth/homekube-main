@@ -5,15 +5,29 @@
   vars:
     kubeconfig: /etc/kubernetes/admin.conf
   tasks:
+    - name: Read Longhorn volume health before upgrade
+      ansible.builtin.command: >-
+        kubectl --kubeconfig {{ kubeconfig }} -n longhorn-system
+        get volumes.longhorn.io -o json
+      register: _lh_pre
+      changed_when: false
+
+    - name: Require every attached volume to be healthy before upgrade
+      ansible.builtin.assert:
+        that: _unhealthy | length == 0
+        fail_msg: >-
+          Longhorn not healthy ({{ _unhealthy | join(', ') }}) —
+          refusing to upgrade {{ inventory_hostname }}
+      vars:
+        _unhealthy: >-
+          {{ (_lh_pre.stdout | from_json)['items']
+             | rejectattr('status.state', 'eq', 'detached')
+             | rejectattr('status.robustness', 'eq', 'healthy')
+             | map(attribute='metadata.name') | list }}
+
     - name: Cordon control plane node
       ansible.builtin.command:
         cmd: "kubectl --kubeconfig {{ kubeconfig }} cordon {{ inventory_hostname }}"
-
-    - name: Drain control plane node
-      ansible.builtin.command:
-        cmd: >-
-          kubectl --kubeconfig {{ kubeconfig }} drain {{ inventory_hostname }}
-          --ignore-daemonsets --delete-emptydir-data --timeout=300s
 
     - name: Retarget Kubernetes apt repository
       import_tasks: roles/k8s-node/tasks/retarget_kube_apt_repo.yml
@@ -104,6 +118,25 @@
       delay: 10
       changed_when: false
 
+    - name: Wait for Longhorn replicas to rebuild and stay healthy
+      ansible.builtin.command: >-
+        kubectl --kubeconfig {{ kubeconfig }} -n longhorn-system
+        get volumes.longhorn.io -o json
+      register: _lh_post
+      until: >-
+        _lh_post.rc == 0
+        and ((_lh_post.stdout | from_json)['items']
+             | rejectattr('status.state', 'eq', 'detached')
+             | rejectattr('status.robustness', 'eq', 'healthy')
+             | list | length) == 0
+      retries: 90
+      delay: 20
+      changed_when: false
+      loop: [1, 2, 3]
+      loop_control:
+        pause: 45
+        label: "confirmation {{ item }}/3"
+
 - name: Upgrade k8s worker nodes
   hosts: data_plane
   become: true
@@ -111,16 +144,30 @@
   vars:
     kubeconfig: /etc/kubernetes/admin.conf
   tasks:
+    - name: Read Longhorn volume health before upgrade
+      ansible.builtin.command: >-
+        kubectl --kubeconfig {{ kubeconfig }} -n longhorn-system
+        get volumes.longhorn.io -o json
+      delegate_to: "{{ groups['control_plane'][0] }}"
+      register: _lh_pre
+      changed_when: false
+
+    - name: Require every attached volume to be healthy before upgrade
+      ansible.builtin.assert:
+        that: _unhealthy | length == 0
+        fail_msg: >-
+          Longhorn not healthy ({{ _unhealthy | join(', ') }}) —
+          refusing to upgrade {{ inventory_hostname }}
+      vars:
+        _unhealthy: >-
+          {{ (_lh_pre.stdout | from_json)['items']
+             | rejectattr('status.state', 'eq', 'detached')
+             | rejectattr('status.robustness', 'eq', 'healthy')
+             | map(attribute='metadata.name') | list }}
+
     - name: Cordon worker node
       ansible.builtin.command:
         cmd: "kubectl --kubeconfig {{ kubeconfig }} cordon {{ inventory_hostname }}"
-      delegate_to: "{{ groups['control_plane'][0] }}"
-
-    - name: Drain worker node
-      ansible.builtin.command:
-        cmd: >-
-          kubectl --kubeconfig {{ kubeconfig }} drain {{ inventory_hostname }}
-          --ignore-daemonsets --delete-emptydir-data --timeout=300s
       delegate_to: "{{ groups['control_plane'][0] }}"
 
     - name: Retarget Kubernetes apt repository
@@ -194,3 +241,23 @@
       delay: 10
       changed_when: false
       delegate_to: "{{ groups['control_plane'][0] }}"
+
+    - name: Wait for Longhorn replicas to rebuild and stay healthy
+      ansible.builtin.command: >-
+        kubectl --kubeconfig {{ kubeconfig }} -n longhorn-system
+        get volumes.longhorn.io -o json
+      delegate_to: "{{ groups['control_plane'][0] }}"
+      register: _lh_post
+      until: >-
+        _lh_post.rc == 0
+        and ((_lh_post.stdout | from_json)['items']
+             | rejectattr('status.state', 'eq', 'detached')
+             | rejectattr('status.robustness', 'eq', 'healthy')
+             | list | length) == 0
+      retries: 90
+      delay: 20
+      changed_when: false
+      loop: [1, 2, 3]
+      loop_control:
+        pause: 45
+        label: "confirmation {{ item }}/3"
