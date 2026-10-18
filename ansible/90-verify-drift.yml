@@ -57,8 +57,7 @@
       register: _lsmod
       changed_when: false
 
-    # Reported, not asserted: 3000 is the known-bad state until the PSUs are
-    # replaced (decision 068). Turn into an assertion once every node reads 5000.
+    # Pi 5 + NVMe needs a 5V/5A supply (decision 068).
     - name: Read negotiated USB-PD current limit
       ansible.builtin.command: od -An -tu4 --endian=big /proc/device-tree/chosen/power/max_current
       register: _max_current
@@ -92,6 +91,11 @@
       ansible.builtin.set_fact:
         node_findings: "{{ node_findings + [inventory_hostname ~ ' kernel: running ' ~ node_state.kernel_running ~ ', installed ' ~ node_state.kernel_installed] }}"
       when: kernel_reboot_pending
+
+    - name: Flag insufficient USB-PD current limit
+      ansible.builtin.set_fact:
+        node_findings: "{{ node_findings + [inventory_hostname ~ ' max_current: ' ~ node_state.max_current_ma ~ 'mA, needs 5000 (decision 068)'] }}"
+      when: node_state.max_current_ma != '5000'
 
     # kube packages carry a Debian revision suffix (1.37.0-1.1), so compare on prefix
     - name: Flag kube package drift
