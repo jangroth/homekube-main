@@ -43,14 +43,6 @@
     {
       "customType": "regex",
       "managerFilePatterns": ["/^ansible/group_vars/all\\.yml$/"],
-      "matchStrings": ["kube_bench_version: \"(?<currentValue>[^\"]+)\""],
-      "datasourceTemplate": "github-releases",
-      "depNameTemplate": "aquasecurity/kube-bench",
-      "extractVersionTemplate": "^v(?<version>.*)$"
-    },
-    {
-      "customType": "regex",
-      "managerFilePatterns": ["/^ansible/group_vars/all\\.yml$/"],
       "matchStrings": ["longhorn_version: \"(?<currentValue>[^\"]+)\""],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "longhorn/cli",

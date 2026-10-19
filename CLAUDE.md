@@ -70,7 +70,7 @@ uv run ansible-playbook 22-k8s-nodes.yml --tags update-only
 | `control-node` | Configures darth (SSH, /etc/hosts, packages) |
 | `raspberry-pi` | Base pi setup: user, NVMe, PCIe |
 | `k8s-node` | K8s prerequisites: cgroups, kernel, containerd, packages, swap |
-| `k8s-control-plane` | kubeadm init, kubeconfig, kube-bench |
+| `k8s-control-plane` | kubeadm init, kubeconfig |
 | `cni` | Cilium install |
 | `gitops` | ArgoCD install |
 

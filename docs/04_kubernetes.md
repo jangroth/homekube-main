@@ -66,7 +66,6 @@ What the playbook does:
 2. **Pre-pulls control-plane images** (`kubeadm config images pull`) on first run
 3. **Runs `kubeadm init`** with `--ignore-preflight-errors=Swap` (swap is intentional — see Design Decisions)
 4. **Sets up kubeconfig** on pi0 at `~/.kube/config`, then fetches it to darth as `~/.kube/homekube.config`, rewriting the server URL from `10.0.0.20:6443` to `pi0:6443` (Tailscale MagicDNS) and renaming the context to `homekube`
-5. **Installs kube-bench** at the pinned version for CIS benchmark scanning
 
 The `kubeadm-config.yaml` key settings:
 
@@ -236,12 +235,6 @@ kubectl certificate approve <name>
 
 Bump `cilium_version` in `ansible/group_vars/all.yml`, then re-run `task 40-cni`. The playbook runs `helm diff` before applying and is idempotent.
 
-### Run kube-bench (CIS benchmark)
-
-```bash
-ssh homekube@pi0 "sudo kube-bench run --targets node,master"
-```
-
 ### etcdctl
 
 `etcdctl` is installed at version `3.6.4` on all nodes (pinned in `ansible/group_vars/all.yml`). To snapshot etcd manually:
@@ -277,7 +270,6 @@ ssh homekube@pi0 "sudo ETCDCTL_API=3 etcdctl \
 | containerd | 2.3.0 | installed |
 | Cilium | 1.19.4 | running |
 | Hubble relay + UI | 1.19.4 | running |
-| kube-bench | 0.13.0 | installed on pi0 |
 | etcdctl | 3.6.4 | installed on all nodes |
 
 Proceed to `05_gitops.md` for ArgoCD bootstrap.
