@@ -1,5 +1,5 @@
 ---
-argocd_helm_chart_version: "10.10.2"
+argocd_helm_chart_version: "10.10.5"
 argocd_root_app_repo_url: "https://github.com/jangroth/homekube-apps.git"
 argocd_root_app_path: "applications"
 argocd_root_app_target_revision: "HEAD"
@@ -11,7 +11,7 @@ control_plane_ip: "10.0.0.20"
 pod_cidr: "10.244.0.0/16"
 service_cidr: "10.96.0.0/12"
 
-containerd_version: "2.4.1"
+containerd_version: "2.4.2"
 
 etcdctl_version: "3.7.2"
 
