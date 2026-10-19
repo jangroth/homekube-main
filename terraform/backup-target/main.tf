@@ -36,15 +36,13 @@ resource "aws_s3_bucket_public_access_block" "backups" {
   restrict_public_buckets = true
 }
 
-# Backstop only — Longhorn (issue #19) and Velero (issue #21) own actual retention.
+# No object expiry: Longhorn backups share blocks, so age-based deletion corrupts live backups.
 resource "aws_s3_bucket_lifecycle_configuration" "backups" {
   bucket = aws_s3_bucket.backups.id
   rule {
-    id     = "safety-net-expiry"
+    id     = "abort-incomplete-multipart"
     status = "Enabled"
     filter {}
-    expiration { days = 30 }
-    # Multipart parts don't show up in listings — clean them up separately.
     abort_incomplete_multipart_upload { days_after_initiation = 7 }
   }
 }
