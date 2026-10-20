@@ -226,10 +226,9 @@ kubectl certificate approve <name>
 
 ### Upgrade Kubernetes version
 
-1. Bump `kubernetes_version` in `ansible/group_vars/all.yml`
-2. Re-run `ansible-playbook 22-k8s-nodes.yml --tags update-only` to install new packages
-3. Cordon and drain pi0, then `kubeadm upgrade apply vX.Y.Z` on pi0
-4. For each worker: drain → `kubeadm upgrade node` → uncordon
+1. Bump `kubernetes_version` in `ansible/group_vars/all.yml` (Renovate opens a PR for patch releases; minors are manual)
+2. Run `task 32-k8s-upgrade` — control plane first, then workers one at a time. Nodes are cordoned, not drained (decision 067), and each step is gated on Longhorn volume health. Pass `-- --limit pi0` to stage the control plane only.
+3. Run `task verify-drift` to confirm all four nodes match
 
 ### Upgrade Cilium
 

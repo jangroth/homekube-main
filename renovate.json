@@ -47,6 +47,14 @@
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "longhorn/cli",
       "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^ansible/group_vars/all\\.yml$/"],
+      "matchStrings": ["kubernetes_version: \"(?<currentValue>[^\"]+)\""],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "kubernetes/kubernetes",
+      "extractVersionTemplate": "^v(?<version>.*)$"
     }
   ],
   "packageRules": [
@@ -54,8 +62,15 @@
       "description": "Group minor and patch updates across pinned Ansible versions",
       "matchManagers": ["custom.regex"],
       "matchUpdateTypes": ["minor", "patch"],
+      "excludeDepNames": ["kubernetes/kubernetes"],
       "groupName": "Ansible-pinned version minor/patch updates",
       "groupSlug": "ansible-versions-minor-patch"
+    },
+    {
+      "description": "Kubernetes: patch releases only, own PR; minors are a deliberate upgrade (task 32-k8s-upgrade).",
+      "matchDepNames": ["kubernetes/kubernetes"],
+      "matchUpdateTypes": ["major", "minor"],
+      "enabled": false
     },
     {
       "description": "Hold Cilium at 1.20.1 — 1.19.8/1.20.2+ load socket-LB eBPF via bpf_core_enum_value_exists(), requiring kernel BTF that Raspberry Pi OS kernels do not ship (decision 065, upstream cilium/cilium#48778). Re-enable once RPi ships BTF or Cilium supports an external BTF path.",

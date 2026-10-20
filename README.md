@@ -37,7 +37,7 @@ uv run ansible-playbook 22-k8s-nodes.yml --tags update-only
 
 ### Renovate PAT (human step)
 
-`.github/workflows/renovate.yml` needs a `RENOVATE_TOKEN` repo secret to open PRs — not creatable by automation. Tracks the Ansible-pinned versions in `ansible/group_vars/all.yml` (argocd, cilium, containerd, etcdctl, longhorn); `kubernetes_version` is excluded (see issue #44).
+`.github/workflows/renovate.yml` needs a `RENOVATE_TOKEN` repo secret to open PRs — not creatable by automation. Tracks the Ansible-pinned versions in `ansible/group_vars/all.yml` (argocd, cilium, containerd, etcdctl, longhorn, kubernetes patch releases only; minors are upgraded deliberately).
 
 1. GitHub → Settings → Developer settings → Fine-grained tokens → new token
 2. Repository access: only this repo (`jangroth/homekube-main`)
