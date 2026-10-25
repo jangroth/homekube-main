@@ -2,11 +2,11 @@
 
 Every SealedSecret in `homekube-apps` decrypts only with a key held by the controller in `kube-system`. A rebuilt cluster without those keys cannot decrypt any of them. The keys are not in git and not covered by Longhorn backups.
 
-The controller renews its sealing key every 30 days and keeps the old ones. Existing SealedSecrets stay sealed to whichever key was active when they were sealed, so a backup must contain **every** key with the label, not only the newest.
+Automatic key renewal is disabled (`keyrenewperiod: "0"`, [decision 076](https://github.com/jangroth/homekube/blob/main/DECISIONS.md)), so the key set only changes when a key is added by hand. The cluster holds six keys from the earlier 30-day renewals. Existing SealedSecrets stay sealed to whichever key was active when they were sealed, so a backup must contain **every** key with the label, not only the newest.
 
 ## Export (human step)
 
-Repeat after each rotation (monthly; `kubectl -n kube-system get secrets -l sealedsecrets.bitnami.com/sealed-secrets-key` shows the creation dates).
+Repeat after any manual rotation (`kubectl -n kube-system get secrets -l sealedsecrets.bitnami.com/sealed-secrets-key` lists the keys and their creation dates).
 
 ```shell
 kubectl -n kube-system get secret -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml | pbcopy
