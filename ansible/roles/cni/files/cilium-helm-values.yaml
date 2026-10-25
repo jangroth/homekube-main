@@ -14,11 +14,6 @@ tunnelProtocol: "vxlan"
 ipam:
   mode: "kubernetes"
 
-l2announcements:
-  enabled: true
-
-# Leader election for L2 announcements is API-chatty (one lease per announcing service).
-# Raise the client-go rate limit so the agent does not get throttled.
 k8sClientRateLimit:
   qps: 50
   burst: 100

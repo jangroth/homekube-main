@@ -157,8 +157,7 @@ Cilium `cilium-helm-values.yaml` key settings:
 | `k8sServiceHost` | `10.0.0.20` | Switch IP — not a Tailscale address |
 | `routingMode: tunnel` / `tunnelProtocol: vxlan` | — | VXLAN overlay for pod-to-pod traffic |
 | `ipam.mode: kubernetes` | — | Node CIDR assignment delegated to kube-controller-manager |
-| `l2announcements.enabled: true` | — | L2 ARP announcements for LoadBalancer VIPs |
-| `k8sClientRateLimit: {qps:50, burst:100}` | — | Raised because L2 leader-election leases are API-chatty |
+| `k8sClientRateLimit: {qps:50, burst:100}` | — | Avoids API server throttling under high API call rates |
 | `devices: eth0,wlan0,tailscale0` | — | `tailscale0` included so Cilium intercepts VIP traffic arriving via Tailscale subnet routing (DECISION-032) |
 | `hubble.enabled: true` | — | Network observability (relay + UI enabled) |
 
