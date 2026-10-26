@@ -229,6 +229,38 @@ kubectl certificate approve <name>
 2. Run `task 32-k8s-upgrade` — control plane first, then workers one at a time. Nodes are cordoned, not drained (decision 067), and each step is gated on Longhorn volume health. Pass `-- --limit pi0` to stage the control plane only.
 3. Run `task verify-drift` to confirm all four nodes match
 
+### verify-drift (`task verify-drift`)
+
+`ansible/90-verify-drift.yml` is a read-only playbook that compares the live cluster against declared state. It exits non-zero if drift is detected, so it is safe to run at any time.
+
+**Checks performed**
+
+| Section | What it checks |
+|---------|---------------|
+| Node versions | kubelet / kubeadm / kubectl, containerd, etcdctl, Tailscale — against `group_vars/all.yml` |
+| Node health | Pending kernel reboot, USB-PD current limit (decision 068), kernel modules, sysctl |
+| Node uniformity | kernel, OS, Tailscale, watchdog, modules must agree across all four nodes |
+| Cilium | Running image tag vs. declared `cilium_version` |
+| **Hand-owned fields** | Fields in any resource's `managedFields` owned by a hand-run `kubectl` operation |
+
+**Hand-owned fields section**
+
+This section (report-only, does not affect the exit code) lists every resource field that was last written by a direct `kubectl patch`, `edit`, `apply`, `replace`, `create`, `label`, `annotate`, or `set` command. It catches state that Helm / ArgoCD cannot remove because another field manager co-owns the field — the root cause of the 2026-06-22 `cilium-config` incident (#61).
+
+Resources scanned: all listable kinds except `events`, `events.events.k8s.io`, `leases.coordination.k8s.io`, `endpoints`, and `endpointslices.discovery.k8s.io`. Only `data.*` and `spec.*` fields are reported; metadata-only ownership (e.g. `kubectl.kubernetes.io/last-applied-configuration` annotations) is suppressed.
+
+Expected output on the current cluster (as of 2026-10-26, after the cilium-config fix in #61):
+
+```
+ConfigMap argocd/argocd-cm kubectl-client-side-apply 2026-07-02: data.oidc.config, data.url
+ConfigMap kube-system/cilium-config kubectl-patch 2026-06-22: data.devices, data.k8s-client-burst, data.k8s-client-qps
+Volume longhorn-system/pvc-75e8ee3f-... kubectl-patch 2026-10-03: spec.numberOfReplicas
+Volume longhorn-system/pvc-92f63497-... kubectl-patch 2026-10-03: spec.numberOfReplicas
+Volume longhorn-system/pvc-db99d8aa-... kubectl-patch 2026-10-03: spec.numberOfReplicas
+```
+
+All entries above are intentional co-ownership (values match Helm/GitOps). `kube-system/kubeadm-config` does not appear because kubectl owns only its annotations.
+
 ### Upgrade Cilium
 
 Bump `cilium_version` in `ansible/group_vars/all.yml`, then re-run `task 40-cni`. The playbook runs `helm diff` before applying and is idempotent.
