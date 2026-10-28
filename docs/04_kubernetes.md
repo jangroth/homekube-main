@@ -231,7 +231,7 @@ kubectl certificate approve <name>
 
 ### verify-drift (`task verify-drift`)
 
-`ansible/90-verify-drift.yml` is a read-only playbook that compares the live cluster against declared state. It exits non-zero if drift is detected, so it is safe to run at any time.
+`ansible/90-verify-drift.yml` is a read-only playbook that compares the live cluster against declared state, so it is safe to run at any time. It exits non-zero if drift is detected.
 
 **Checks performed**
 
@@ -245,21 +245,15 @@ kubectl certificate approve <name>
 
 **Hand-owned fields section**
 
-This section (report-only, does not affect the exit code) lists every resource field that was last written by a direct `kubectl patch`, `edit`, `apply`, `replace`, `create`, `label`, `annotate`, or `set` command. It catches state that Helm / ArgoCD cannot remove because another field manager co-owns the field — the root cause of the 2026-06-22 `cilium-config` incident (#61).
+This section (report-only, does not affect the exit code) lists every resource field owned by a direct `kubectl patch`, `edit`, `apply`, `replace`, `create`, or `set` command. It catches state that Helm / ArgoCD cannot remove because another field manager co-owns the field — the root cause of the 2026-06-22 `cilium-config` incident (jangroth/homekube#61). A hit is not necessarily wrong: co-ownership is harmless while the value matches what GitOps declares.
 
-Resources scanned: all listable kinds except `events`, `events.events.k8s.io`, `leases.coordination.k8s.io`, `endpoints`, and `endpointslices.discovery.k8s.io`. Only `data.*` and `spec.*` fields are reported; metadata-only ownership (e.g. `kubectl.kubernetes.io/last-applied-configuration` annotations) is suppressed.
+Resources scanned: all listable kinds except `events`, `events.events.k8s.io`, `leases.coordination.k8s.io`, `endpoints`, and `endpointslices.discovery.k8s.io`. All top-level fields except `metadata` and `status` are reported (e.g. `data`, `spec`, RBAC `rules`/`subjects`, `webhooks`); metadata-only ownership (e.g. `kubectl.kubernetes.io/last-applied-configuration` annotations) is suppressed. Kinds that could not be read are listed as `scan failed for: …`.
 
-Expected output on the current cluster (as of 2026-10-26, after the cilium-config fix in #61):
+Output format, one line per field manager:
 
 ```
-ConfigMap argocd/argocd-cm kubectl-client-side-apply 2026-07-02: data.oidc.config, data.url
 ConfigMap kube-system/cilium-config kubectl-patch 2026-06-22: data.devices, data.k8s-client-burst, data.k8s-client-qps
-Volume longhorn-system/pvc-75e8ee3f-... kubectl-patch 2026-10-03: spec.numberOfReplicas
-Volume longhorn-system/pvc-92f63497-... kubectl-patch 2026-10-03: spec.numberOfReplicas
-Volume longhorn-system/pvc-db99d8aa-... kubectl-patch 2026-10-03: spec.numberOfReplicas
 ```
-
-All entries above are intentional co-ownership (values match Helm/GitOps). `kube-system/kubeadm-config` does not appear because kubectl owns only its annotations.
 
 ### Upgrade Cilium
 

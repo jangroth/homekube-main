@@ -169,7 +169,7 @@
 
           KUBECONFIG = sys.argv[1]
           KUBECTL_RE = re.compile(
-              r'^kubectl(-patch|-edit|-client-side-apply|-replace|-create|-label|-annotate|-set)?$'
+              r'^kubectl(-patch|-edit|-client-side-apply|-replace|-create|-set)?$'
           )
           EXCLUDED = frozenset([
               'events',
@@ -185,28 +185,27 @@
                   ['kubectl', '--kubeconfig', KUBECONFIG] + list(args),
                   capture_output=True, text=True,
               )
-              return r.stdout
+              return r.returncode, r.stdout
 
 
-          kinds = [
-              k for k in
-              kubectl('api-resources', '--verbs=list', '-o', 'name').splitlines()
-              if k and k not in EXCLUDED
-          ]
+          # api-resources exits non-zero if any aggregated API is down but still lists the rest
+          _, names = kubectl('api-resources', '--verbs=list', '-o', 'name')
+          kinds = [k for k in names.splitlines() if k and k not in EXCLUDED]
+          if not kinds:
+              sys.exit('api-resources returned no kinds')
 
           hits = []
+          failed = []
           for kind in kinds:
-              raw = kubectl('get', kind, '-A', '--show-managed-fields', '-o', 'json')
-              if not raw:
-                  continue
+              rc, raw = kubectl('get', kind, '-A', '--show-managed-fields', '-o', 'json')
               try:
-                  data = json.loads(raw)
-              except (json.JSONDecodeError, ValueError):
+                  data = json.loads(raw) if rc == 0 else None
+              except ValueError:
+                  data = None
+              if data is None:
+                  failed.append(kind)
                   continue
-              items = data.get('items', [])
-              if not items and 'metadata' in data:
-                  items = [data]
-              for item in items:
+              for item in data.get('items', []):
                   meta = item.get('metadata', {})
                   ns = meta.get('namespace', '')
                   name = meta.get('name', '')
@@ -219,8 +218,13 @@
                           continue
                       fv1 = mf.get('fieldsV1', {})
                       owned = []
-                      for section in ('f:data', 'f:spec'):
-                          for k in fv1.get(section, {}).keys():
+                      for section in [s for s in fv1 if s not in ('f:metadata', 'f:status')]:
+                          if not fv1[section]:
+                              owned.append(section[2:])
+                              continue
+                          for k in fv1[section].keys():
+                              if k == '.':
+                                  continue
                               field = k[2:] if k.startswith('f:') else k
                               owned.append(section[2:] + '.' + field)
                       if not owned:
@@ -231,7 +235,7 @@
                           item_kind, ref, manager, time_str, ', '.join(owned),
                       ))
 
-          json.dump(hits, sys.stdout)
+          json.dump({'hits': hits, 'failed': failed}, sys.stdout)
         dest: /tmp/_homekube_hand_owned.py
         mode: "0700"
       changed_when: false
@@ -246,13 +250,15 @@
       ansible.builtin.file:
         path: /tmp/_homekube_hand_owned.py
         state: absent
+      changed_when: false
 
     - name: Store hand-owned fields result
       ansible.builtin.set_fact:
-        hand_owned_hits: >-
-          {{ _hand_owned_raw.stdout | from_json
-             if _hand_owned_raw.rc == 0 and _hand_owned_raw.stdout
-             else [] }}
+        hand_owned_hits: "{{ _scan.hits + (['scan failed for: ' ~ _scan.failed | join(', ')] if _scan.failed else []) }}"
+      vars:
+        _scan: >-
+          {{ _hand_owned_raw.stdout | from_json if _hand_owned_raw.rc == 0
+             else {'hits': [], 'failed': ['all kinds (rc=' ~ _hand_owned_raw.rc ~ '): ' ~ _hand_owned_raw.stderr | trim]} }}
 
 - name: Report drift
   hosts: all_nodes
