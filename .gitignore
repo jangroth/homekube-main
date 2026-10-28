@@ -7,4 +7,4 @@ downloads/*
 
 
 **/.DS_Store
-secrets.md
+secrets.mdansible/files/__pycache__/
