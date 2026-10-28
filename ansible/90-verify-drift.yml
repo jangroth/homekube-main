@@ -158,6 +158,22 @@
         _running_cilium: "{{ _cilium_image.stdout | regex_search('cilium:v([^@]+)', '\\1') | first | default('unknown') }}"
       when: _cilium_image.stdout is not search('cilium:v' ~ cilium_version)
 
+    - name: Scan for hand-owned fields
+      ansible.builtin.script:
+        cmd: hand_owned_fields.py {{ kubeconfig }}
+        executable: python3
+      register: _hand_owned_raw
+      changed_when: false
+      failed_when: false
+
+    - name: Store hand-owned fields result
+      ansible.builtin.set_fact:
+        hand_owned_hits: "{{ _scan.hits + (['scan failed for: ' ~ _scan.failed | join(', ')] if _scan.failed else []) }}"
+      vars:
+        _scan: >-
+          {{ _hand_owned_raw.stdout | from_json if _hand_owned_raw.rc == 0
+             else {'hits': [], 'failed': ['all kinds (rc=' ~ _hand_owned_raw.rc ~ '): ' ~ _hand_owned_raw.stderr | trim]} }}
+
 - name: Report drift
   hosts: all_nodes
   become: false
@@ -196,6 +212,13 @@
           {{ (ansible_play_hosts | map('extract', hostvars, 'node_findings') | flatten)
              + (uniformity_findings | default([]))
              + (hostvars[groups['control_plane'][0]]['cluster_findings'] | default([])) }}
+      run_once: true
+
+    - name: Show hand-owned fields
+      ansible.builtin.debug:
+        msg: "Hand-owned fields:\n{{ _hits | join('\n') if _hits else 'none' }}"
+      vars:
+        _hits: "{{ hostvars[groups['control_plane'][0]]['hand_owned_hits'] | default([]) }}"
       run_once: true
 
     - name: Fail if any drift was found
