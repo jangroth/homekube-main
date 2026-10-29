@@ -7,7 +7,7 @@ Run daily by the "homekube-main - nightly todo" Claude Code routine. The routine
 | Setting       | Value                                                                 |
 |---------------|-----------------------------------------------------------------------|
 | Trigger       | `trig_01TrV6VfMXKVEGr9cdMVw4EL`                                       |
-| Schedule      | `0 14 * * *` (14:00 UTC daily)                                        |
+| Schedule      | `0 14 * * *`: 14:00 UTC daily (00:00 AEST, next day)                   |
 | Model         | claude-opus-5-5                                                       |
 | Allowed tools | Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch              |
 | Environment   | `claude-code-homekube-main`, see [cloud-environment.md](cloud-environment.md)          |

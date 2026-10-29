@@ -55,7 +55,7 @@ gh workflow run renovate.yml --repo jangroth/homekube-main
 
 ## Nightly routine
 
-A Claude Code cloud routine ("homekube-main - nightly todo", daily 14:00 UTC) picks up one open tracker issue labelled `agent-safe` + `repo:homekube-main` and opens a PR for review. Its config lives in the repo:
+A Claude Code cloud routine ("homekube-main - nightly todo", daily 14:00 UTC / 00:00 AEST) picks up one open tracker issue labelled `agent-safe` + `repo:homekube-main` and opens a PR for review. Its config lives in the repo:
 
 - `.claude/routines/nightly-todo.md` — the routine's instructions and settings; the routine prompt only points to this file
 - `.claude/routines/cloud-environment.md` — the cloud environment's settings: name, network allowlist, setup script
