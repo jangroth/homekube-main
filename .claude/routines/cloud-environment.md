@@ -11,13 +11,13 @@ The claude.ai cloud environment the nightly routine runs in. These settings exis
 
 ## Allowed domains
 
-| Domain                                | Needed for                                          |
-|---------------------------------------|-----------------------------------------------------|
-| `github.com`                          | Git clone and push; `uv` Python downloads           |
-| `api.github.com`                      | `gh api` calls for issues and PRs                   |
-| `objects.githubusercontent.com`       | `uv` Python downloads (GitHub release assets)       |
-| `release-assets.githubusercontent.com` | `uv` Python downloads (GitHub release assets)      |
-| `astral.sh`                           | `uv` installer, if the image has no `uv`            |
-| `pypi.org`                            | `uv sync`                                           |
-| `files.pythonhosted.org`              | `uv sync`                                           |
-| `galaxy.ansible.com`                  | `ansible-galaxy collection install`                 |
+```
+github.com                            # git clone and push; uv Python downloads
+api.github.com                        # gh api calls for issues and PRs
+objects.githubusercontent.com         # uv Python downloads (GitHub release assets)
+release-assets.githubusercontent.com  # uv Python downloads (GitHub release assets)
+astral.sh                             # uv installer, if the image has no uv
+pypi.org                              # uv sync
+files.pythonhosted.org                # uv sync
+galaxy.ansible.com                    # ansible-galaxy collection install
+```
