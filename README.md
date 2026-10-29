@@ -6,6 +6,7 @@ Cluster topology, network architecture, and component/version tables live in the
 
 <!-- TOC -->
 * [Setup](#setup)
+* [Nightly routine](#nightly-routine)
 <!-- /TOC -->
 
 ---
@@ -49,3 +50,12 @@ Trigger a run manually instead of waiting for the weekly cron (Monday 06:00 UTC)
 ```sh
 gh workflow run renovate.yml --repo jangroth/homekube-main
 ```
+
+---
+
+## Nightly routine
+
+A Claude Code cloud routine ("homekube-main - nightly todo", daily 14:00 UTC) picks up one open tracker issue labelled `agent-safe` + `repo:homekube-main` and opens a PR for review. Its config lives in the repo:
+
+- `.claude/routines/nightly-todo.md` — the routine's instructions and settings; the routine prompt only points to this file
+- `scripts/cloud/setup.sh` — the cloud environment's setup script; the environment's script only runs `bash /home/user/homekube-main/scripts/cloud/setup.sh`
