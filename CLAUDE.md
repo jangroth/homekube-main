@@ -6,6 +6,12 @@ See parent `CLAUDE.md` (one level up) for cluster topology, SSH access, and work
 
 ---
 
+## Branching
+
+Never commit to `main`. Every change goes on a branch and through a PR, rebased onto `main` and merged with a merge commit (never squash).
+
+---
+
 ## Playbook Sequence
 
 Run in order for a full cluster setup. After fresh SD card boot, start from step 2.
