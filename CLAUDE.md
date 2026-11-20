@@ -4,6 +4,8 @@ Ansible provisioning for the homekube Raspberry Pi cluster.
 
 See parent `CLAUDE.md` (one level up) for cluster topology, SSH access, and working conventions.
 
+**Agent skills**: use a Matt Pocock skill whenever one covers the task. Its tracker, labels and domain docs (glossary, ADRs) are set in the parent `CLAUDE.md` → `## Agent skills`; in a standalone clone, read it with `gh api repos/jangroth/homekube/contents/CLAUDE.md -H 'Accept: application/vnd.github.raw'`.
+
 ---
 
 ## Running Playbooks
