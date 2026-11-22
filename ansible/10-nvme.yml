@@ -2,7 +2,7 @@
 # NVMe migration. Two phases around a human checkpoint (physical NVMe attach):
 #   Phase 1 (pre-attach):  ansible-playbook setup-nvme.yml --tags nvme_pre
 #   Phase 2 (post-attach): ansible-playbook setup-nvme.yml --tags nvme_post --limit pi0,pi1,pi2
-# See docs/specs/001-nvme-clone-automation.md.
+# See https://github.com/jangroth/homekube/blob/main/docs/archive/specs/001-nvme-clone-automation.md.
 - name: NVMe migration
   hosts: all_nodes
   become: true
