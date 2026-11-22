@@ -2,8 +2,8 @@
 
 Creates the IAM Identity Center permission sets and attribution IAM roles that
 `../backup-target/` (and future Terraform-managed AWS resources) authenticate
-through. See `docs/specs/008-s3-backup-target-terraform.md` §4a/§5 in the
-top-level `homekube` repo for the full design and execution plan.
+through. See [spec 008](https://github.com/jangroth/homekube/blob/main/docs/archive/specs/008-s3-backup-target-terraform.md) §4a/§5
+for the full design and execution plan.
 
 Applied once, by hand, using Jan's admin SSO profile — creating the scoped
 identity is itself a privileged action nothing less-privileged can perform.

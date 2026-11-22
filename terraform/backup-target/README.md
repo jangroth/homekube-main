@@ -1,8 +1,8 @@
 # backup-target
 
 Creates the S3 bucket and IAM user Longhorn (issue #19) and Velero (issue #21)
-use for off-cluster backups. See `docs/specs/008-s3-backup-target-terraform.md`
-§4b/§5 in the top-level `homekube` repo for the full design and execution plan.
+use for off-cluster backups. See [spec 008](https://github.com/jangroth/homekube/blob/main/docs/archive/specs/008-s3-backup-target-terraform.md)
+§4b/§5 for the full design and execution plan.
 
 Applies using the `homekube-terraform` SSO profile created by
 `../bootstrap-identity/`.
