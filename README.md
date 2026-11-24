@@ -45,7 +45,7 @@ uv run ansible-playbook 22-k8s-nodes.yml --tags update-only
 3. Permissions: **Contents** (read/write), **Pull requests** (read/write), **Issues** (read/write) for the Dependency Dashboard
 4. Add as repo secret `RENOVATE_TOKEN`: Settings → Secrets and variables → Actions
 
-Trigger a run manually instead of waiting for the weekly cron (Monday 06:00 UTC):
+Trigger a run manually instead of waiting for the weekly cron (Monday 02:00 UTC; GitHub often starts it hours late):
 
 ```sh
 gh workflow run renovate.yml --repo jangroth/homekube-main
