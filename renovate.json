@@ -6,6 +6,7 @@
   "labels": ["dependencies"],
   "assignees": ["jangroth"],
   "prConcurrentLimit": 5,
+  "gitAuthor": "Renovate <359655+jangroth@users.noreply.github.com>",
   "customManagers": [
     {
       "customType": "regex",
@@ -61,7 +62,7 @@
       "description": "Group minor and patch updates across pinned Ansible versions",
       "matchManagers": ["custom.regex"],
       "matchUpdateTypes": ["minor", "patch"],
-      "excludeDepNames": ["kubernetes/kubernetes"],
+      "matchDepNames": ["!kubernetes/kubernetes"],
       "groupName": "Ansible-pinned version minor/patch updates",
       "groupSlug": "ansible-versions-minor-patch"
     },
