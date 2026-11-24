@@ -15,7 +15,7 @@ containerd_version: "2.4.2"
 
 etcdctl_version: "3.7.4"
 
-kubernetes_version: "1.37.1"
+kubernetes_version: "1.37.2"
 
 longhorn_version: "1.13.0"
 
