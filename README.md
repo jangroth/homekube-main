@@ -51,6 +51,38 @@ Trigger a run manually instead of waiting for the weekly cron (Monday 02:00 UTC;
 gh workflow run renovate.yml --repo jangroth/homekube-main
 ```
 
+### Infisical admin identity (human step)
+
+`terraform/infisical/` configures Infisical's projects, machine identities and their Kubernetes Auth (ADR-0010 (Terraform owns AWS-account infrastructure and Infisical configuration)). It authenticates as an admin identity that only exists in Infisical and the password manager. Create it once, and again after an Infisical rebuild:
+
+1. Infisical UI (`https://192.168.86.247`) → Organization → Access Control → Identities → Create Identity: name `terraform-admin`, organization role **Admin**
+2. On the identity: Authentication → Universal Auth (defaults) → Client Secrets → Create; the secret is shown once
+3. Store in the password manager, item `Infisical terraform-admin`: client ID, client secret, and the organization ID (Organization Settings → General)
+
+### Infisical configuration (human step)
+
+Needs `ALLOW_INTERNAL_IP_CONNECTIONS` on Infisical (`homekube-apps`): Kubernetes Auth calls the API server on a private IP, which Infisical refuses otherwise. Terraform talks to Infisical's plain-HTTP backend through a port-forward, so it works from any network and needs no trust in homekube-ca. Secret values are never in Terraform: they are entered in the Infisical UI by each app's cutover step in the `homekube-apps` README.
+
+```sh
+kubectl -n infisical port-forward deploy/infisical 8080:8080 &
+
+export INFISICAL_UNIVERSAL_AUTH_CLIENT_ID=<client ID>        # password manager: Infisical terraform-admin
+export INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET=<client secret>
+export TF_VAR_org_id=<organization ID>
+export TF_VAR_kubernetes_ca_certificate="$(kubectl -n default get cm kube-root-ca.crt -o jsonpath='{.data.ca\.crt}')"
+
+cd terraform/infisical
+terraform init
+terraform plan     # first apply: 5 resources per app (project, prod environment, identity, Kubernetes Auth, Viewer membership)
+terraform apply
+terraform plan     # must report no changes
+terraform output   # identity ID and project slug per app, for its InfisicalSecret
+
+kill %1
+```
+
+Projects have delete protection: remove it in the UI before a `terraform destroy`. A cluster rebuild changes the cluster CA, so re-run the apply with the new `TF_VAR_kubernetes_ca_certificate`.
+
 ---
 
 ## Nightly routine
