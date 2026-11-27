@@ -36,6 +36,10 @@ uv run ansible-playbook 20-configure-darth.yml --tags update-only
 uv run ansible-playbook 22-k8s-nodes.yml --tags update-only
 ```
 
+### Power outage (human step)
+
+Shut the whole cluster down and bring it back with [Full cluster shutdown and power-up](./docs/shutdown-power-outage.md).
+
 ### Renovate PAT (human step)
 
 `.github/workflows/renovate.yml` needs a `RENOVATE_TOKEN` repo secret to open PRs — not creatable by automation. Tracks the Ansible-pinned versions in `ansible/group_vars/all.yml` (argocd, cilium, containerd, etcdctl, longhorn, kubernetes patch releases only; minors are upgraded deliberately).
