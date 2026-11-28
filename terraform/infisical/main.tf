@@ -5,7 +5,7 @@ locals {
     agent-vault     = { namespace = "agent-vault", service_account = "infisical-auth" }
     aperture-egress = { namespace = "aperture-egress", service_account = "infisical-auth" }
     hermes          = { namespace = "hermes", service_account = "infisical-auth" }
-    dex             = { namespace = "dex", service_account = "infisical-auth" }
+    dex-idp         = { namespace = "dex", service_account = "infisical-auth" }
     grafana         = { namespace = "observability", service_account = "infisical-auth" }
   }
 }
