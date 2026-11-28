@@ -85,6 +85,24 @@ terraform output   # identity ID and project slug per app, for its InfisicalSecr
 kill %1
 ```
 
+**Check isolation** after an apply that adds or changes an identity: log in as that app's machine identity with its service-account token, as the operator does, then read its own project and another app's. Every identity comes from the same `for_each`, so one app per apply is enough. Slugs are the app names in `main.tf`; a made-up slug returns 404 whatever the permissions.
+
+```sh
+kubectl -n infisical port-forward deploy/infisical 8080:8080 & sleep 3
+APP=homepage NS=homepage OTHER=coder     # app key and namespace from main.tf, plus another app's key
+ID=$(terraform output -json identity_ids | jq -r --arg a "$APP" '.[$a]')
+JWT=$(kubectl -n "$NS" create token infisical-auth --duration=10m)
+TOKEN=$(curl -fsS http://localhost:8080/api/v1/auth/kubernetes-auth/login -H 'Content-Type: application/json' \
+  -d "{\"identityId\":\"$ID\",\"jwt\":\"$JWT\"}" | jq -r .accessToken)
+curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8080/api/v3/secrets/raw?workspaceSlug=$APP&environment=prod&secretPath=/"      # 200
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8080/api/v3/secrets/raw?workspaceSlug=$OTHER&environment=prod&secretPath=/" | jq -r .message   # "You are not a member of this project …"
+unset APP NS OTHER ID JWT TOKEN; kill %1
+```
+
+The app's namespace needs its `infisical-auth` service account, so run this once its `homekube-apps` manifests have synced.
+
 Projects have delete protection: remove it in the UI before a `terraform destroy`. A cluster rebuild changes the cluster CA, so re-run the apply with the new `TF_VAR_kubernetes_ca_certificate`.
 
 ---
